@@ -1,0 +1,7 @@
+{
+  "files.exclude": {
+    "crates": true,
+    "python": true,
+    "docs": true,
+  }
+}

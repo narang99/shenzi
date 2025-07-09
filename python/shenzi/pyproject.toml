@@ -1,0 +1,17 @@
+[project]
+name = "shenzi"
+version = "0.0.1"
+description = "A greedy Python standalone application bundler"
+readme = "README.md"
+authors = [
+    { name = "Hariom Narang", email = "hariom2711@gmail.com" }
+]
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+shenzi = "shenzi:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

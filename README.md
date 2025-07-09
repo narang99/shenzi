@@ -4,9 +4,9 @@
 
 ## The python packaging problem
 Given a development environment (a virtual environment), we want to produce a single directory containing ALL the dependencies that the application needs. Other languages like `rust` and `go` provide easy way to create statically linked executables, which makes them very easy to distribute.  
-`python` struggles in this area mainly because of how flexible it is when it comes to delegating work to C code (shared libraries on your system).   
+Python struggles in this area mainly because of how flexible it is when it comes to delegating work to C code (shared libraries on your system).   
 
-Out in the wild, `python` regularly links to shared libraries in your system:
+Out in the wild, python libraries regularly links to shared libraries in your system:
 - [C Extensions](https://docs.python.org/3/extending/extending.html)
 - loading shared libraries using `dlopen` and equivalents
 
@@ -39,11 +39,11 @@ Now run the `shenzi` CLI with this manifest file
 ```bash
 shenzi build ./shenzi.json
 ```
-This can take a moment, after it is done, your application would be packaged in a `dist` folder (including the python interpreter).  
-You can ship this `dist` folder to any target machine and it should work out of the box.  
+This can take a moment, after it is done, your application would be packaged in a `dist` folder.  
+You can ship this `dist` folder to any target machine and it should work out of the box. The only required dependency is `bash`.  
 
 
-It does depend on existence of `bash` in target machines, you can start your application using
+Run `dist/bootstrap.sh` to run your application.  
 ```bash
 # bootstrap.sh is the entrypoint for your application
 # you can run this from any directory generally

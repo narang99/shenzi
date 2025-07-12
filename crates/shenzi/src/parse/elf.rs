@@ -81,10 +81,10 @@ fn do_parse(
     let elf = Elf {
         dt_needed,
         dt_rpaths,
-        dt_runpaths,
-        path: object_path.clone(),
-        all_dt_rpaths: rpaths,
-        all_dt_runpaths: runpaths,
+        _dt_runpaths: dt_runpaths,
+        _path: object_path.clone(),
+        _all_dt_rpaths: rpaths,
+        _all_dt_runpaths: runpaths,
     };
 
     Ok(elf)

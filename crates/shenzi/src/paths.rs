@@ -7,7 +7,6 @@
 use anyhow::{Context, Result, anyhow};
 use log::warn;
 
-use crate::manifest::Env;
 use std::{
     path::{Component, Path, PathBuf},
     str::FromStr,
@@ -47,14 +46,6 @@ pub fn is_sys_lib(path: &str) -> bool {
     path.starts_with("/usr/lib/")
         || path.starts_with("/System/Library/Frameworks/")
         || path.starts_with("/System/Library/PrivateFrameworks/")
-}
-
-pub fn get_dyld_library_path(env: &Env) -> Vec<PathBuf> {
-    if let Some(dyld_library_path) = env.get("DYLD_LIBRARY_PATH") {
-        dyld_library_path.split(':').map(PathBuf::from).collect()
-    } else {
-        Vec::new()
-    }
 }
 
 pub fn to_string_path(path: &Path) -> Result<String> {

@@ -116,9 +116,9 @@ fn _parse_single_macho(
     Ok((
         Macho {
             load_cmds,
-            rpaths,
-            id_dylib,
-            path: macho_path.clone(),
+            _rpaths: rpaths,
+            _id_dylib: id_dylib,
+            _path: macho_path.clone(),
             all_rpaths,
         },
         macho.header().cpu_type(),

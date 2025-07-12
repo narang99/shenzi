@@ -1,15 +1,11 @@
 // patching libraries to work with the new symlink tree
 // basically all install_name_tool operations
 
-use std::{
-    path::PathBuf,
-    process::{Command, Stdio},
-};
+use std::path::PathBuf;
 
-use anyhow::{Result, anyhow, bail};
-use pathdiff::diff_paths;
+use anyhow::Result;
 
-use crate::{parse::Macho, pkg::patch::elf::{patch_elf, patch_elf_for_destination}};
+use crate::pkg::patch::elf::{patch_elf, patch_elf_for_destination};
 use crate::{node::deps::Deps, parse::Binary, pkg::patch::macho::patch_macho};
 
 mod macho;

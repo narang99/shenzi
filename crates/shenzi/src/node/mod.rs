@@ -1,5 +1,4 @@
 use std::{
-    ffi::OsStr,
     fmt::Display,
     hash::{Hash, Hasher},
     path::PathBuf,
@@ -7,13 +6,13 @@ use std::{
 
 use anyhow::Result;
 
-use crate::{digest::make_digest, manifest::Version, node::deps::Deps};
+use crate::{manifest::Version, node::deps::Deps};
 
 pub mod deps;
 
 #[derive(Debug, Clone)]
 pub struct PrefixPlain {
-    pub original_prefix: PathBuf,
+    pub _original_prefix: PathBuf,
 
     pub rel_path: PathBuf,
 
@@ -22,7 +21,7 @@ pub struct PrefixPlain {
 
 #[derive(Debug, Clone)]
 pub struct PrefixBinary {
-    pub original_prefix: PathBuf,
+    pub _original_prefix: PathBuf,
 
     pub rel_path: PathBuf,
 
@@ -35,7 +34,7 @@ pub struct PrefixBinary {
 pub enum Pkg {
     SitePackagesPlain{
         // original site-packages path
-        site_packages: PathBuf,
+        _site_packages: PathBuf,
         // to prevent collisions, we create an alias which is the name of this site-packages destination in dist
         alias: String,
         // the path relative to site-packages path, we simply copy data from node to this path inside alias in dist
@@ -43,7 +42,7 @@ pub enum Pkg {
     },
     SitePackagesBinary {
         // original site-packages path
-        site_packages: PathBuf,
+        _site_packages: PathBuf,
         // to prevent collisions, we create an alias which is the name of this site-packages destination in dist
         alias: String,
         // the path relative to site-packages path, we simply copy data from node to this path inside alias in dist
@@ -60,28 +59,8 @@ pub enum Pkg {
     Executable,
     Binary {sha: String},
     BinaryInLDPath { symlinks: Vec<String>, sha: String },
-    Plain,
 }
 
-impl Pkg {
-    pub fn from_path(path: &PathBuf) -> Result<Pkg> {
-        // uses simple heuristics to find the packager for a path
-        // it would be either of binary or plain, as we don't have context of any site-packages
-        // it is preferred to pass the correct Pkg manually (you might have your own heuristics)
-        // create enum variant yourself and return it
-        let ext = path.extension();
-        match ext {
-            None => Ok(Pkg::Plain),
-            Some(ext) => {
-                if ext == "so" || ext == "dylib" {
-                    Ok(Pkg::Binary {sha: make_digest(path)?})
-                } else {
-                    Ok(Pkg::Plain)
-                }
-            }
-        }
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct Node {
@@ -90,12 +69,6 @@ pub struct Node {
     pub deps: Deps,
 
     pub pkg: Pkg,
-}
-
-impl Node {
-    pub fn name(&self) -> Option<&OsStr> {
-        self.path.file_name()
-    }
 }
 
 impl PartialEq for Node {
@@ -131,6 +104,8 @@ impl Node {
 
     #[cfg(test)]
     pub fn mock(path: PathBuf, deps: Vec<PathBuf>) -> Result<Node> {
+        use crate::digest::make_digest;
+
         let sha = make_digest(&path)?;
         Ok(Node {
             path,

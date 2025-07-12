@@ -1,16 +1,6 @@
-use std::{env, path::PathBuf, process::exit};
+use std::process::exit;
 
-use clap::Parser;
-use log::info;
 
-use crate::{
-    cli::Cli,
-    gather::{NodeFactory, build_graph_from_manifest},
-    graph::FileGraph,
-    manifest::ShenziManifest,
-    paths::normalize_path,
-    pkg::{bootstrap::write_bootstrap_script, move_all_nodes, move_to_dist},
-};
 
 mod cli;
 mod digest;

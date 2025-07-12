@@ -7,7 +7,6 @@
 
 use std::path::PathBuf;
 
-use anyhow::{Context, anyhow};
 use lazy_static::lazy_static;
 use log::error;
 use regex::Regex;
@@ -15,7 +14,6 @@ use regex::Regex;
 use crate::{
     manifest::Version,
     node::{Node, Pkg},
-    paths::get_lib_name,
 };
 
 pub trait ExportedFileTree {
@@ -33,12 +31,12 @@ impl ExportedFileTree for Pkg {
     fn destination(&self, path: &PathBuf, dist: &PathBuf) -> Option<PathBuf> {
         match self {
             Pkg::SitePackagesPlain {
-                site_packages: _,
+                _site_packages: _,
                 alias,
                 rel_path,
             }
             | Pkg::SitePackagesBinary {
-                site_packages: _,
+                _site_packages: _,
                 alias,
                 rel_path,
                 sha: _,
@@ -63,7 +61,6 @@ impl ExportedFileTree for Pkg {
                 &prefix_pkgs.rel_path,
                 dist,
             )),
-            Pkg::Plain => None,
             Pkg::BinaryInLDPath {
                 symlinks: _,
                 sha: _,
@@ -76,17 +73,16 @@ impl ExportedFileTree for Pkg {
     fn reals(&self, node: &Node, dist: &PathBuf) -> Option<PathBuf> {
         match self {
             Pkg::SitePackagesPlain {
-                site_packages: _,
+                _site_packages: _,
                 alias: _,
                 rel_path: _,
             }
-            | Pkg::Plain
             | Pkg::Executable
             | Pkg::ExecPrefixPlain(_)
             | Pkg::PrefixPlain(_) => None,
 
             Pkg::SitePackagesBinary {
-                site_packages: _,
+                _site_packages: _,
                 alias: _,
                 rel_path: _,
                 sha,
@@ -104,16 +100,15 @@ impl ExportedFileTree for Pkg {
     fn symlink_farm(&self, path: &PathBuf, dist: &PathBuf) -> Option<PathBuf> {
         match self {
             Pkg::SitePackagesPlain {
-                site_packages: _,
+                _site_packages: _,
                 alias: _,
                 rel_path: _,
             }
-            | Pkg::Plain
             | Pkg::ExecPrefixPlain(_)
             | Pkg::PrefixPlain(_) => None,
 
             Pkg::SitePackagesBinary {
-                site_packages: _,
+                _site_packages: _,
                 alias: _,
                 rel_path: _,
                 sha,

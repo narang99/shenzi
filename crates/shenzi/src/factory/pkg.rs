@@ -26,14 +26,14 @@ pub fn get_exec_prefix_pkg(
     let version = version.clone();
     if is_shared_library {
         Ok(Pkg::ExecPrefixBinary(PrefixBinary {
-            original_prefix,
+            _original_prefix: original_prefix,
             version,
             rel_path,
             sha: make_digest(path)?,
         }))
     } else {
         Ok(Pkg::ExecPrefixPlain(PrefixPlain {
-            original_prefix,
+            _original_prefix: original_prefix,
             rel_path,
             version,
         }))
@@ -52,14 +52,14 @@ pub fn get_prefix_pkg(path: &PathBuf, original_prefix: &PathBuf, version: &Versi
     let version = version.clone();
     if is_shared_library {
         Ok(Pkg::PrefixBinary(PrefixBinary {
-            original_prefix,
+            _original_prefix: original_prefix,
             version,
             rel_path,
             sha: make_digest(path)?,
         }))
     } else {
         Ok(Pkg::PrefixPlain(PrefixPlain {
-            original_prefix,
+            _original_prefix: original_prefix,
             rel_path,
             version,
         }))
@@ -84,14 +84,14 @@ pub fn get_site_packages_pkg(
     let alias = alias.to_string();
     if is_shared_library {
         Ok(Pkg::SitePackagesBinary {
-            site_packages,
+            _site_packages: site_packages,
             alias,
             rel_path,
             sha: make_digest(path)?,
         })
     } else {
         Ok(Pkg::SitePackagesPlain {
-            site_packages,
+            _site_packages: site_packages,
             alias,
             rel_path,
         })

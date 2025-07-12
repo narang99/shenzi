@@ -13,8 +13,7 @@ impl Export for Pkg {
     fn to_destination(&self, path: &PathBuf, dest: &PathBuf, dist: &PathBuf) -> Result<()> {
         mk_parent_dirs(dest)?;
         match self {
-            Pkg::SitePackagesPlain { site_packages: _, alias: _, rel_path: _ }
-            | Pkg::Plain
+            Pkg::SitePackagesPlain { _site_packages: _, alias: _, rel_path: _ }
             | Pkg::Executable
             | Pkg::PrefixPlain(_)
             | Pkg::ExecPrefixPlain(_) => {
@@ -40,7 +39,7 @@ impl Export for Pkg {
 
             },
 
-            Pkg::SitePackagesBinary { site_packages: _, alias: _, rel_path: _, sha: _ }
+            Pkg::SitePackagesBinary { _site_packages: _, alias: _, rel_path: _, sha: _ }
             | Pkg::Binary { sha: _ }
             | Pkg::PrefixBinary(_)
             | Pkg::ExecPrefixBinary(_) => {

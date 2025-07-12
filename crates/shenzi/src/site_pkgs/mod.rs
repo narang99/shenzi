@@ -14,9 +14,6 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub struct SitePkgs {
-    // all the site-packages we found in manifest including prefixes
-    pub resolved: Vec<PathBuf>,
-
     // with aliases, only the top level ones are in this
     pub site_pkg_by_alias: HashMap<PathBuf, String>,
 
@@ -45,7 +42,6 @@ impl SitePkgs {
             &sys.path,
         );
         Self {
-            resolved: manifest.python.sys.path.iter().cloned().collect(),
             site_pkg_by_alias: site_pkg_by_alias,
             lib_dynload: lib_dynload_path,
             stdlib: stdlib_path,

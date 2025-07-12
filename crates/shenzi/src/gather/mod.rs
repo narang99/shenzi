@@ -3,7 +3,7 @@
 use std::{collections::HashMap, path::PathBuf};
 
 use anyhow::{Context, Error, Result, anyhow, bail};
-use log::{error, info};
+use log::info;
 use walkdir::WalkDir;
 
 mod error;

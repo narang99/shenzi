@@ -1,4 +1,3 @@
-use std::process::exit;
 
 use anyhow::{bail, Result};
 use clap::Parser;

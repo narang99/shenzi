@@ -8,13 +8,13 @@ pub struct Macho {
     pub load_cmds: HashMap<String, PathBuf>,
 
     // all rpaths, along with resolved rpath
-    pub rpaths: HashMap<String, PathBuf>,
+    pub _rpaths: HashMap<String, PathBuf>,
 
     // the current id of the dylib
-    pub id_dylib: Option<String>,
+    pub _id_dylib: Option<String>,
 
     // path to the lib
-    pub path: PathBuf,
+    pub _path: PathBuf,
 
     // all rpaths, unresolved, raw rpaths
     pub all_rpaths: Vec<String>,
@@ -29,16 +29,16 @@ pub struct Elf {
     pub dt_rpaths: HashMap<String, PathBuf>,
 
     // all resolvable runpaths
-    pub dt_runpaths: HashMap<String, PathBuf>,
+    pub _dt_runpaths: HashMap<String, PathBuf>,
 
     // path to lib
-    pub path: PathBuf,
+    pub _path: PathBuf,
 
     // all rpath entries (resolved and unresolved)
-    pub all_dt_rpaths: Vec<String>,
+    pub _all_dt_rpaths: Vec<String>,
 
     // all runpath entries (resolved and unresolved)
-    pub all_dt_runpaths: Vec<String>,
+    pub _all_dt_runpaths: Vec<String>,
 }
 
 #[derive(Debug, Clone)]

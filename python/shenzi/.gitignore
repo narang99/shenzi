@@ -1,5 +1,5 @@
 # inside bin
-bin
+/src/shenzi/bin/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

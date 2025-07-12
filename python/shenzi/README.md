@@ -58,12 +58,13 @@ If you use this, feel free to raise an issue on any problem, I need feedback for
 I will add a small comparison to PyInstaller, which I feel is the most mature tool in the ecosystem.  
 From what I've seen, PyInstaller statically analyses your python code (and does some imports too) to create the smallest possible packaged application. It is smarter than `shenzi`.  
 
-`shenzi` is much simpler, all it does it greedily take everything in your python path and put it in the final distribution. For shared libraries, it closely tries to resemble the linker to find all the dependencies of each shared library, and put that in the application too.  
-The motive here is to be as similar to the original development environment as possible, `shenzi` only changes how the shared libraries in the codebase find dependencies.  
-This makes `shenzi` faster in some cases (where you have complex applications, as we do not do any static analysis), but slower in others (mainly if your virtual environment is huge, and not all dependencies are used by your application normally)   
+- `shenzi` is much simpler. It tries to intercept all linker activity during runtime. 
+  - During packaging, `shenzi` will faithfully analyze all dependencies in the same order as done by the linker. Following the linker might solve a class of edge cases (not proved though, for all I know, this algorithm might end up performing very poorly)
+- It also packages everything in your python path (all data+code in your site-packages). 
+  - This makes `shenzi` faster in some cases (where you have complex applications, as we do not do any static analysis), but slower in others (mainly if your virtual environment is huge, and not all dependencies are used by your application normally)   
 
 Apart from that, there are some other internal differences that may or may not matter
-- The structure of the final application (described [here](/docs/dist-structure.md))
+- The structure of the final application (described [here](/docs/dist-structure.md)). It's slightly similar to how `pnpm` organizes `node_modules` as far as I'm aware.  
 - The bootstrap script in `shenzi` is pretty a simple bash script, it simply sets up the correct Python environment variables and starts the interpreter. PyInstaller has a very sophisticated bootstrapping CLI written in C
 
 # Supported Platforms

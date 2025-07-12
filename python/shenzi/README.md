@@ -50,7 +50,7 @@ Run `dist/bootstrap.sh` to run your application.
 bash dist/bootstrap.sh
 ```
 
-You should at least read the doc which describes the structure of `shenzi.json` [here](./docs/manifest.md).  
+You should at least read the doc which describes the structure of `shenzi.json` [here](/docs/manifest.md).  
 
 If you use this, feel free to raise an issue on any problem, I need feedback for this :)
 
@@ -63,7 +63,7 @@ The motive here is to be as similar to the original development environment as p
 This makes `shenzi` faster in some cases (where you have complex applications, as we do not do any static analysis), but slower in others (mainly if your virtual environment is huge, and not all dependencies are used by your application normally)   
 
 Apart from that, there are some other internal differences that may or may not matter
-- The structure of the final application (described [here](./docs/dist-structure.md))
+- The structure of the final application (described [here](/docs/dist-structure.md))
 - The bootstrap script in `shenzi` is pretty a simple bash script, it simply sets up the correct Python environment variables and starts the interpreter. PyInstaller has a very sophisticated bootstrapping CLI written in C
 
 # Supported Platforms

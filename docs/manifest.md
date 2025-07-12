@@ -4,41 +4,42 @@ The Shenzi manifest file is a JSON file which contains all the information that 
 This file contains many absolute paths, it  can't be moved between systems, ideally you should run `shenzi build` on this file the moment you stop interception.  
 
 
-```json
-// all paths are absolute paths
+Although this is a JSON file, I've written at as a python dict (comments in JSON in github markdown look weird)
+```python
+# all paths are absolute paths
 {
     "skip": {
         "prefixes": [
-            // list of absolute paths, shenzi would ignore these paths recursively, they won't be copied to the dist folder
-            // as an example, ignoring `pygraphviz` module fully
-            // you can also pass module names in `shenzi_init_discovery`, like `shenzi_init_discovery(["pygraphviz"])`
-            // the python library would try to find `pygraphviz` on your path and add it to skip list if found
+            # list of absolute paths, shenzi would ignore these paths recursively, they won't be copied to the dist folder
+            # as an example, ignoring `pygraphviz` module fully
+            # you can also pass module names in `shenzi_init_discovery`, like `shenzi_init_discovery(["pygraphviz"])`
+            # the python library would try to find `pygraphviz` on your path and add it to skip list if found
             "<absolute-path-to-my-site-packages>/pygraphviz"
         ],
         "libs": [
-            // names of shared libraries to ignore
-            // any library which has this name would be skipped
-            // just names, no paths here. no absolute paths too
+            # names of shared libraries to ignore
+            # any library which has this name would be skipped
+            # just names, no paths here. no absolute paths too
             "graphviz.so"
         ],
     },
     "loads": [
-        // all libraries which were loaded using `dlopen` or were python extension modules
-        // example, you can add an entry like this if `shenzi` misses some library
+        # all libraries which were loaded using `dlopen` or were python extension modules
+        # example, you can add an entry like this if `shenzi` misses some library
         {
             "kind": "dlopen",
             "path": "<absolute-path-to-shared-library.so>"
         }
     ],
     "libs": [
-        // in mac, this is the list of ALL libraries that the linker loaded during interception
+        # in mac, this is the list of ALL libraries that the linker loaded during interception
     ],
     "env": {
-        // os.environ
+        # os.environ
     },
     "python": {
         "sys": {
-            // information from python sys module
+            # information from python sys module
             "prefix": "<path-to-sys.prefix>",
             "exec_prefix": "<path-to-sys.exec_prefix>",
             "platlibdir": "<path-to-sys.platlibdir>",
@@ -48,7 +49,7 @@ This file contains many absolute paths, it  can't be moved between systems, idea
                 "abi_thread": "",
             },
             "path": [
-                // all absolute paths in `sys.path`
+                # all absolute paths in `sys.path`
             ],
             "executable": "<path-to-python-interpreter-from-sys.executable>",
         },

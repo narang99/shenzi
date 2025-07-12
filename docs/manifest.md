@@ -13,13 +13,13 @@ This file contains many absolute paths, it  can't be moved between systems, idea
             // as an example, ignoring `pygraphviz` module fully
             // you can also pass module names in `shenzi_init_discovery`, like `shenzi_init_discovery(["pygraphviz"])`
             // the python library would try to find `pygraphviz` on your path and add it to skip list if found
-            "<absolute-path-to-my-site-packages>/pygraphviz",
+            "<absolute-path-to-my-site-packages>/pygraphviz"
         ],
         "libs": [
             // names of shared libraries to ignore
             // any library which has this name would be skipped
             // just names, no paths here. no absolute paths too
-            "graphviz.so",
+            "graphviz.so"
         ],
     },
     "loads": [
@@ -27,7 +27,7 @@ This file contains many absolute paths, it  can't be moved between systems, idea
         // example, you can add an entry like this if `shenzi` misses some library
         {
             "kind": "dlopen",
-            "path": "<absolute-path-to-shared-library.so>",
+            "path": "<absolute-path-to-shared-library.so>"
         }
     ],
     "libs": [
@@ -53,7 +53,7 @@ This file contains many absolute paths, it  can't be moved between systems, idea
             "executable": "<path-to-python-interpreter-from-sys.executable>",
         },
         "main": "<path-to-the-main-script>"
-    },
+    }
 }
 ```
 

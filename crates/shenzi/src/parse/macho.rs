@@ -13,7 +13,7 @@ use lief::macho::{
 };
 use log::{debug, warn};
 
-use crate::paths::{is_sys_lib, normalize_path, split_colon_separated_into_valid_search_paths};
+use crate::{parse::error::ErrDidNotFindDependency, paths::{is_sys_lib, normalize_path, split_colon_separated_into_valid_search_paths}};
 
 use crate::parse::core::{BinaryParseError, Macho};
 
@@ -195,11 +195,7 @@ fn get_load_commands(
                         }
                         None => match known_libs.get(&val) {
                             None => {
-                                bail!(
-                                    "could not find dependency for load_cmd={} ctx={:?}",
-                                    val,
-                                    ctx
-                                );
+                                bail!(ErrDidNotFindDependency { lib: macho_path.clone(), name: val});
                             }
                             Some(lib_path) => {
                                 load_cmds.insert(val, lib_path.clone());

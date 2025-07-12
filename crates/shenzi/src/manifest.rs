@@ -1,9 +1,12 @@
 use std::{collections::HashMap, path::PathBuf};
 
+use anyhow::{Context, Result};
 /// the module defining types for deserializing shenzi.json (or called shenzi manifest)
 /// an example json is in this test module, code is duplicated between `python/shenzi` and our crate
 /// both should always be synced
 use serde::{Deserialize, Serialize};
+
+use crate::paths::normalize_path;
 
 pub type Env = HashMap<String, String>;
 
@@ -16,6 +19,20 @@ pub struct ShenziManifest {
     pub skip: Skip,
 }
 
+impl ShenziManifest {
+    pub fn from_str(manifest_contents: &str) -> Result<Self> {
+        let mut manifest: ShenziManifest = serde_json::from_str(manifest_contents)
+            .context("Failed to parse shenzi manifest as JSON")?;
+        manifest.python.sys.path = manifest
+            .python
+            .sys
+            .path
+            .iter()
+            .map(|p| normalize_path(p))
+            .collect();
+        Ok(manifest)
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Skip {

@@ -1,13 +1,13 @@
 mod core;
 mod elf;
 mod macho;
+mod error;
 mod search;
 
 use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
 use anyhow::anyhow;
-pub use core::{Binary, BinaryParseError, Elf, Macho};
 use std::collections::HashSet;
 use log::warn;
 use std::collections::HashMap;
@@ -15,7 +15,9 @@ use std::path::PathBuf;
 
 use elf::parse as parse_linux;
 use macho::parse as parse_macho;
-// pub use macho::get_deps_from_macho;
+
+pub use core::{Binary, BinaryParseError, Elf, Macho};
+pub use error::{ErrDidNotFindDependency, ErrDidNotFindDependencies};
 
 pub fn parse_and_search(
     path: &PathBuf,

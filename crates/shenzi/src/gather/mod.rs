@@ -6,19 +6,23 @@ use anyhow::{Context, Error, Result, anyhow, bail};
 use log::{error, info};
 use walkdir::WalkDir;
 
+mod error;
+
 pub use crate::factory::NodeFactory;
 pub use crate::site_pkgs::PythonPathComponent;
 
 use crate::{
     factory::Factory,
+    gather::error::MultipleGatherErrors,
     graph::FileGraph,
     manifest::{LoadKind, ShenziManifest},
     node::{Node, deps::Deps},
+    parse::{ErrDidNotFindDependencies, ErrDidNotFindDependency},
     site_pkgs::SitePkgs,
 };
 
 pub fn build_graph_from_manifest(
-    manifest: &Box<ShenziManifest>,
+    manifest: &ShenziManifest,
     cwd: &PathBuf,
 ) -> Result<(FileGraph<NodeFactory>, Vec<PythonPathComponent>)> {
     let site_pkgs = SitePkgs::from_manifest(manifest);
@@ -58,7 +62,6 @@ fn build_graph(
         true,
         &Vec::new(),
     )?;
-
 
     let executable_extra_paths_to_search = g
         .get_node_by_path(executable_path)
@@ -193,7 +196,7 @@ fn add_failures(
         i = i + 1;
         info!("adding failed nodes: Pass {}, length={}", i, prev_len);
 
-        let mut new_failures = Vec::new();
+        let mut new_failures: Vec<(PathBuf, anyhow::Error)> = Vec::new();
 
         // failures addition does not recursively replace stuff in the graph
         for (p, _) in prev_failures {
@@ -206,18 +209,7 @@ fn add_failures(
         }
 
         if new_failures.len() >= prev_len {
-            let errors: Vec<String> = new_failures
-                .into_iter()
-                .map(|(_, e)| format!("{:#}", e))
-                .collect();
-            error!("known libs:");
-            for (lib, path) in known_libs.iter() {
-                error!("{}: {}", lib, path.display());
-            }
-            bail!(
-                "fatal failure in gather, could not find the dependencies of libraries. Errors:\n{}",
-                errors.join("\n\n")
-            );
+            return Err(failures_to_error(new_failures));
         }
 
         prev_failures = new_failures;
@@ -226,6 +218,24 @@ fn add_failures(
         known_libs = get_libs_from_graph(g);
     }
     Ok(())
+}
+
+fn failures_to_error(failures: Vec<(PathBuf, anyhow::Error)>) -> anyhow::Error {
+    let mut dep_resolution_errs: Vec<ErrDidNotFindDependency> = Vec::new();
+    let mut others: Vec<anyhow::Error> = Vec::new();
+    for (_, e) in failures {
+        match e.downcast_ref::<ErrDidNotFindDependency>() {
+            Some(e) => dep_resolution_errs.push(e.clone()),
+            None => others.push(e),
+        };
+    }
+
+    let dep_res_err = ErrDidNotFindDependencies {
+        causes: dep_resolution_errs,
+    };
+    others.push(anyhow::Error::from(dep_res_err));
+
+    anyhow::Error::from(MultipleGatherErrors { errors: others })
 }
 
 fn add_nodes_recursive(
@@ -257,7 +267,7 @@ fn add_nodes_recursive(
     // batch = nodes[:10]
     // batches = nodes(n batches of size k each)
     // parallel: for batch in batches:
-        // small_graph = generate_graph(batch, path_by_node)
+    // small_graph = generate_graph(batch, path_by_node)
     // graph.extend(small_graph)
 
     for p in paths {

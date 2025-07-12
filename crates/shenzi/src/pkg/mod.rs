@@ -3,9 +3,12 @@
 use std::{fs, path::PathBuf};
 
 use anyhow::{Context, Result, anyhow};
+use log::info;
 use pathdiff::diff_paths;
 
 use crate::{
+    gather::NodeFactory,
+    graph::FileGraph,
     node::Node,
     pkg::{
         export::{Export, mk_parent_dirs},
@@ -19,6 +22,21 @@ pub mod bootstrap;
 pub mod export;
 pub mod patch;
 pub mod paths;
+
+pub fn move_all_nodes(graph: &FileGraph<NodeFactory>, dist: &PathBuf) {
+    info!("exporting files to dist");
+    let total = graph.len();
+    let mut i = 0;
+    // TODO: parallelize this (we need custom toposort implementation)
+    for node in graph.toposort().unwrap() {
+        let deps = graph.get_node_dependencies(&node);
+        move_to_dist(&node, &deps, dist).unwrap();
+        i += 1;
+        if total / 10 != 0 && i % (total / 10) == 0 {
+            info!("exported {}/{} files", i, total);
+        }
+    }
+}
 
 pub fn move_to_dist(node: &Node, deps: &Vec<Node>, dist: &PathBuf) -> Result<()> {
     // todo: python executable does not have a symlink farm, fix that

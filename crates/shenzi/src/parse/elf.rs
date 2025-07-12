@@ -3,7 +3,10 @@ use std::{collections::HashMap, path::PathBuf};
 use anyhow::{Result, anyhow, bail};
 use lief::elf::{Binary, DynamicEntries};
 
-use crate::{parse::{search::linux::parse_linux_rpath, Elf}, paths::split_colon_separated_into_valid_search_paths};
+use crate::{
+    parse::{error::ErrDidNotFindDependency, search::linux::parse_linux_rpath, Elf},
+    paths::split_colon_separated_into_valid_search_paths,
+};
 
 pub fn parse(
     binary: Binary,
@@ -63,11 +66,10 @@ fn do_parse(
                 if let Some(known_path) = known_libs.get(lib) {
                     dt_needed.insert(lib.to_string(), known_path.clone());
                 } else {
-                    bail!(
-                        "failed in finding dependency {} for library at path={}",
-                        lib,
-                        object_path.display()
-                    );
+                    bail!(ErrDidNotFindDependency {
+                        name: lib.clone(),
+                        lib: object_path.clone()
+                    });
                 }
             }
             Some(path) => {
@@ -92,7 +94,7 @@ fn resolve_rpaths(rpaths: &Vec<String>, object_path: &PathBuf) -> Result<HashMap
     let mut res = HashMap::new();
     for rpath in rpaths {
         match parse_linux_rpath(rpath, object_path)? {
-            None => {},
+            None => {}
             Some(path) => {
                 res.insert(rpath.clone(), path);
             }
@@ -120,7 +122,8 @@ fn get_dynamic_entries(
                 rpaths.extend(new_rpaths);
             }
             DynamicEntries::RunPath(e) => {
-                let new_runpaths: Vec<String> = e.runpath().split(":").map(|s| s.to_string()).collect();
+                let new_runpaths: Vec<String> =
+                    e.runpath().split(":").map(|s| s.to_string()).collect();
                 runpaths.extend(new_runpaths);
             }
             DynamicEntries::SharedObject(e) => {

@@ -49,3 +49,10 @@ Run `dist/bootstrap.sh` to run your application.
 # you can run this from any directory generally
 bash dist/bootstrap.sh
 ```
+
+# Roadmap
+
+- windows support
+- guiding users when a library is not installed in the development machine itself (some library is optional for some pip package, the shared library exists in site-packages but is never loaded [it doesn't work in the user's machine at all]). In this case, making the dist would fail too. Need to come up with a way to guide users in this
+- better error messaging
+- benchmarking and optimizations

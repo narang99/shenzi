@@ -65,15 +65,15 @@ You would want to edit the file if:
 
 
 Skipping directories recursively
-```json
+```python
 {
     
     "skip": {
         "prefixes": [
-            // list of absolute paths, shenzi would ignore these paths recursively, they won't be copied to the dist folder
-            // as an example, ignoring `pygraphviz` module fully
-            // you can also pass module names in `shenzi_init_discovery`, like `shenzi_init_discovery(["pygraphviz"])`
-            // the python library would try to find `pygraphviz` on your path and add it to skip list if found
+            # list of absolute paths, shenzi would ignore these paths recursively, they won't be copied to the dist folder
+            # as an example, ignoring `pygraphviz` module fully
+            # you can also pass module names in `shenzi_init_discovery`, like `shenzi_init_discovery(["pygraphviz"])`
+            # the python library would try to find `pygraphviz` on your path and add it to skip list if found
             "<absolute-path-to-my-site-packages>/pygraphviz",
         ],
     },
@@ -81,13 +81,13 @@ Skipping directories recursively
 ```
 
 Skipping shared libraries using their names
-```json
+```python
 {
     "skip": {
         "libs": [
-            // names of shared libraries to ignore
-            // any library which has this name would be skipped
-            // just names, no paths here. no absolute paths too
+            # names of shared libraries to ignore
+            # any library which has this name would be skipped
+            # just names, no paths here. no absolute paths too
             "graphviz.so",
         ],
     },
@@ -95,12 +95,12 @@ Skipping shared libraries using their names
 ```
 
 Adding a library manually
-```json
+```python
 "loads": [
-    ... // other entries added by shenzi automatically
-    // all libraries which were loaded using `dlopen` or were python extension modules
-    // example, you can add an entry like this if `shenzi` misses some library
-    // append/prepend this entry, order does not matter
+    ... # other entries added by shenzi automatically
+    # all libraries which were loaded using `dlopen` or were python extension modules
+    # example, you can add an entry like this if `shenzi` misses some library
+    # append/prepend this entry, order does not matter
     {
         "kind": "dlopen",
         "path": "<absolute-path-to-shared-library.so>",

@@ -2,7 +2,7 @@
 name = "shenzi"
 version = "0.0.1"
 description = "A greedy Python standalone application bundler"
-readme = "../../README.md"
+readme = "./README.md"
 authors = [
     { name = "Hariom Narang", email = "hariom2711@gmail.com" }
 ]

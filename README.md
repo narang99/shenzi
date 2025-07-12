@@ -31,7 +31,7 @@ if os.environ.get("SHENZI_INIT_DISCOVERY", "False") == "True":
 ```
 
 Run your application as you normally do. `shenzi` will start intercepting all shared libraries that your code is importing.  
-You should run as much of your application code as possible, like running all the tests. This allows `shenzi` to detect every shared library linked to your application at runtime.  
+You should run as much of your application code as possible, like running all the tests. This allows `shenzi` to detect every dependency linked to your application at runtime.  
 
 Once you stop the application, a file `shenzi.json` (called the manifest) will be dumped in the current directory. This file contains all the shared library loads that `shenzi` detected. It also contains some information about your virtual environment.  
 Now run the `shenzi` CLI with this manifest file
@@ -50,13 +50,20 @@ Run `dist/bootstrap.sh` to run your application.
 bash dist/bootstrap.sh
 ```
 
+You should at least read the doc which describes the structure of `shenzi.json` [here](./docs/manifest.md).  
+
+
 # How is this different?
 I will add a small comparison to PyInstaller, which I feel is the most mature tool in the ecosystem.  
 From what I've seen, PyInstaller statically analyses your python code (and does some imports too) to create the smallest possible packaged application. It is smarter than `shenzi`.  
-`shenzi` is much simpler, all it does it greedily take everything in your python path and put it in the final distribution. For shared libraries, it closely tries to resemble the linker to find all the dependencies of each shared library, and put that in the application too.  
-Apart from that, the final structure of the distributed application is also different, see [here](./docs/dist-structure.md).  
 
+`shenzi` is much simpler, all it does it greedily take everything in your python path and put it in the final distribution. For shared libraries, it closely tries to resemble the linker to find all the dependencies of each shared library, and put that in the application too.  
 The motive here is to be as similar to the original development environment as possible, `shenzi` only changes how the shared libraries in the codebase find dependencies.  
+This makes `shenzi` faster in some cases (where you have complex applications, as we do not do any static analysis), but slower in others (mainly if your virtual environment is huge, and not all dependencies are used by your application normally)   
+
+Apart from that, there are some other internal differences that may or may not matter
+- The structure of the final application (described [here](./docs/dist-structure.md))
+- The bootstrap script in `shenzi` is pretty a simple bash script, it simply sets up the correct Python environment variables and starts the interpreter. PyInstaller has a very sophisticated bootstrapping CLI written in C
 
 # Supported Platforms
 

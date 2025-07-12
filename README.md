@@ -37,7 +37,7 @@ Once you stop the application, a file `shenzi.json` (called the manifest) will b
 Now run the `shenzi` CLI with this manifest file
 
 ```bash
-shenzi build ./shenzi.json
+RUST_LOG=INFO shenzi build ./shenzi.json
 ```
 This can take a moment, after it is done, your application would be packaged in a `dist` folder.  
 You can ship this `dist` folder to any target machine and it should work out of the box. The only required dependency is `bash`.  
@@ -50,9 +50,15 @@ Run `dist/bootstrap.sh` to run your application.
 bash dist/bootstrap.sh
 ```
 
-# Roadmap
+# How is this different?
+I will add a small comparison to PyInstaller, which I feel is the most mature tool in the ecosystem.  
+From what I've seen, PyInstaller statically analyses your python code (and does some imports too) to create the smallest possible packaged application. It is smarter than `shenzi`.  
+`shenzi` is much simpler, all it does it greedily take everything in your python path and put it in the final distribution. For shared libraries, it closely tries to resemble the linker to find all the dependencies of each shared library, and put that in the application too.  
+Apart from that, the final structure of the distributed application is also different, see [here](./docs/dist-structure.md).  
 
-- windows support
-- guiding users when a library is not installed in the development machine itself (some library is optional for some pip package, the shared library exists in site-packages but is never loaded [it doesn't work in the user's machine at all]). In this case, making the dist would fail too. Need to come up with a way to guide users in this
-- better error messaging
-- benchmarking and optimizations
+The motive here is to be as similar to the original development environment as possible, `shenzi` only changes how the shared libraries in the codebase find dependencies.  
+
+# Supported Platforms
+
+Currently only Mac and Linux are supported.  
+The project is very new right now, I've tested it on Ubuntu 20.04 and MacOS Sequoia.  

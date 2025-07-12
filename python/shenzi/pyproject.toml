@@ -21,3 +21,6 @@ pure_python = false
 
 [tool.hatch.build.hooks.custom]
 path = "hatch_build.py"
+
+[project.urls]
+Repository = "https://github.com/narang99/shenzi.git"

@@ -2,8 +2,9 @@
 
 use std::{fs, path::PathBuf};
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{Context, Result, anyhow, bail};
 use log::info;
+use pathdiff::diff_paths;
 
 use crate::{
     gather::PythonPathComponent,
@@ -22,7 +23,6 @@ ORIGINAL_DYLD_LIBRARY_PATH="${DYLD_LIBRARY_PATH:-}"
 export DYLD_LIBRARY_PATH="$SCRIPT_DIR/lib/l:$ORIGINAL_DYLD_LIBRARY_PATH"
 echo "DYLD_LIBRARY_PATH: $DYLD_LIBRARY_PATH"
 
-# SITE_PKG_REL_PATHS=("site-packages/numpy" "site-packages/pandas" "site-packages/scipy")
 SITE_PKG_REL_PATHS={{SITE_PKGS_REPLACEMENT}}
 
 export PYTHONPATH=""
@@ -32,7 +32,9 @@ done
 
 echo "PYTHONPATH=$PYTHONPATH"
 
-exec "$SCRIPT_DIR/python/bin/python" "$@"
+
+cd $SCRIPT_DIR/{{MAIN_SCRIPT_DIR}}
+exec "$SCRIPT_DIR/python/bin/python" {{MAIN_SCRIPT_NAME}} "$@"
 "#;
 
 // possible fix for linux being weird
@@ -63,14 +65,15 @@ done
 
 echo "PYTHONPATH=$PYTHONPATH"
 
-exec "$SCRIPT_DIR/python/bin/python" "$@"
+cd $SCRIPT_DIR/{{MAIN_SCRIPT_DIR}}
+exec "$SCRIPT_DIR/python/bin/python" {{MAIN_SCRIPT_NAME}} "$@"
 "#;
-
 
 pub fn write_bootstrap_script(
     dist: &PathBuf,
     comps: &Vec<PythonPathComponent>,
     version: &Version,
+    main_destination: &PathBuf,
 ) -> Result<()> {
     let script_path = dist.join("bootstrap.sh");
     info!("writing bootstrap script at {}", script_path.display());
@@ -81,22 +84,63 @@ pub fn write_bootstrap_script(
             comps, version
         )
     })?;
+    let (main_parent_dir, main_filename) = get_main_script_paths(main_destination, dist)?;
     let os = std::env::consts::OS;
+    let gen_bootstrap = |template: &str| {
+        template
+            .replace("{{SITE_PKGS_REPLACEMENT}}", &comps_array)
+            .replace("{{MAIN_SCRIPT_DIR}}", &main_parent_dir)
+            .replace("{{MAIN_SCRIPT_NAME}}", &main_filename)
+    };
     let script = match os {
-        "macos" => {
-            MAC_BOOTSTRAP_SCRIPT.replace("{{SITE_PKGS_REPLACEMENT}}", &comps_array)
-        },
-        "linux" => {
-            LINUX_BOOTSTRAP_SCRIPT.replace("{{SITE_PKGS_REPLACEMENT}}", &comps_array)
-        },
+        "macos" => gen_bootstrap(&MAC_BOOTSTRAP_SCRIPT),
+        "linux" => gen_bootstrap(&LINUX_BOOTSTRAP_SCRIPT),
+
         _ => {
             bail!("unsupported OS: {}", os);
         }
     };
-        
+
     fs::write(script_path, script)?;
     info!("bootstrap script written");
     Ok(())
+}
+
+fn get_main_script_paths(main_destination: &PathBuf, dist: &PathBuf) -> Result<(String, String)> {
+    let main_path = diff_paths(main_destination, dist).ok_or_else(|| {
+        anyhow!(
+            "failed in finding relative path of main script inside dist main={} dist={}",
+            main_destination.display(),
+            dist.display()
+        )
+    })?;
+
+    let main_script_dir = main_path
+        .parent()
+        .ok_or(anyhow!(
+            "could not find parent of main script={}",
+            main_path.display()
+        ))?
+        .to_str()
+        .ok_or(anyhow!(
+            "failed in converting directory name of main script to string, main={}",
+            main_path.display()
+        ))?
+        .to_string();
+    let file_name = main_path
+        .file_name()
+        .ok_or(anyhow!(
+            "could not find file_name of main script={}",
+            main_path.display()
+        ))?
+        .to_str()
+        .ok_or(anyhow!(
+            "failed in converting filename of main script to string, main={}",
+            main_path.display()
+        ))?
+        .to_string();
+
+    Ok((main_script_dir, file_name))
 }
 
 fn python_path_from_components(

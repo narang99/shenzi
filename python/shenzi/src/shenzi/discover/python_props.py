@@ -1,9 +1,11 @@
 import sys
 from shenzi.discover.types import Python, Sys, Version
+from pathlib import Path
 
 
 def get_python_props() -> Python:
     abi_thread = "t" if hasattr(sys, "abiflags") and "t" in sys.abiflags else ""
+    
 
     return Python(
         sys=Sys(
@@ -17,5 +19,6 @@ def get_python_props() -> Python:
             ),
             path=sys.path,
             executable=sys.executable,
-        )
+        ),
+        main=str(Path(sys.argv[0]).resolve()),
     )

@@ -69,9 +69,10 @@ class Sys:
 @dataclass(frozen=True)
 class Python:
     sys: Sys
+    main: str
     
     def to_dict(self) -> dict[str, Any]:
-        return {"sys": self.sys.to_dict()}
+        return {"sys": self.sys.to_dict(), "main": self.main}
 
 
 @dataclass(frozen=True)

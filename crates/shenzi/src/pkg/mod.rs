@@ -23,12 +23,16 @@ pub mod export;
 pub mod patch;
 pub mod paths;
 
-pub fn move_all_nodes(graph: &FileGraph<NodeFactory>, dist: &PathBuf) {
+pub fn move_all_nodes(graph: &FileGraph<NodeFactory>, dist: &PathBuf, main_script_path: &PathBuf) -> Result<PathBuf> {
     info!("exporting files to dist");
     let total = graph.len();
     let mut i = 0;
     // TODO: parallelize this (we need custom toposort implementation)
-    for node in graph.toposort().unwrap() {
+    let mut main_destination = None;
+    for node in graph.toposort().context("failed in running toposort on the dependency graph")? {
+        if node.path == *main_script_path {
+            main_destination = node.pkg.destination(&node.path, dist);
+        }
         let deps = graph.get_node_dependencies(&node);
         move_to_dist(&node, &deps, dist).unwrap();
         i += 1;
@@ -36,6 +40,8 @@ pub fn move_all_nodes(graph: &FileGraph<NodeFactory>, dist: &PathBuf) {
             info!("exported {}/{} files", i, total);
         }
     }
+
+    main_destination.ok_or(anyhow!("could not find the final path for main script, script={}", main_script_path.display()))
 }
 
 pub fn move_to_dist(node: &Node, deps: &Vec<Node>, dist: &PathBuf) -> Result<()> {

@@ -65,6 +65,8 @@ pub struct Lib {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Python {
     pub sys: Sys,
+    // path to the main script
+    pub main: PathBuf,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

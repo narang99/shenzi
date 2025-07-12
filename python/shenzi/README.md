@@ -69,4 +69,4 @@ Apart from that, there are some other internal differences that may or may not m
 # Supported Platforms
 
 Currently only Mac and Linux are supported.  
-The project is very new right now, I've tested it on Ubuntu 20.04 and MacOS Sequoia.  
+The project is very new right now, I've tested it on Ubuntu 20.04 and MacOS Sequoia with Python 3.9  

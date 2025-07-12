@@ -52,6 +52,7 @@ bash dist/bootstrap.sh
 
 You should at least read the doc which describes the structure of `shenzi.json` [here](./docs/manifest.md).  
 
+If you use this, feel free to raise an issue on any problem, I need feedback for this :)
 
 # How is this different?
 I will add a small comparison to PyInstaller, which I feel is the most mature tool in the ecosystem.  

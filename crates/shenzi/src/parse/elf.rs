@@ -83,8 +83,8 @@ fn do_parse(
         dt_rpaths,
         _dt_runpaths: dt_runpaths,
         _path: object_path.clone(),
-        _all_dt_rpaths: rpaths,
-        _all_dt_runpaths: runpaths,
+        all_dt_rpaths: rpaths,
+        all_dt_runpaths: runpaths,
     };
 
     Ok(elf)

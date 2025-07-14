@@ -25,11 +25,11 @@ The list contains two entries for each failure, the path to the file whose depen
 
 This can happen when the library at the failed path (the second entry) is not used by your python application.  
 Some packages ship shared libraries which are used in a plugin based fashion, in that case, if your system is not configured for that feature, the plugin won't be loaded.
-If this is the case for your library, you can add the name of the library (the last component of the path entry) to the `skip.libs` property in the manifest.  
-
+This is why, right now `shenzi` emits a warning when it's not able to find a dependency for a shared library.  
 A simple way to check whether this library is actually needed is to search the name of the dependency that was not found in the whole system
+
 You can do that by running `find / -name 'name'` in bash
-If the library is not anywhere in the system, it is safe to skip that library (by putting it in `skip.libs`)
+If the library is not anywhere in the system, it is safe to ignore this warning
 What to put exactly in skip.libs?
     If you have an entry as `libtensorrt.so <- /path/to/libonnxruntime.so`
     Then you should keep "libonnxruntime.so" in `skip.libs` in your manifest file as a string in the array

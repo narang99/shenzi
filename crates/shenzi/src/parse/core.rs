@@ -35,10 +35,10 @@ pub struct Elf {
     pub _path: PathBuf,
 
     // all rpath entries (resolved and unresolved)
-    pub _all_dt_rpaths: Vec<String>,
+    pub all_dt_rpaths: Vec<String>,
 
     // all runpath entries (resolved and unresolved)
-    pub _all_dt_runpaths: Vec<String>,
+    pub all_dt_runpaths: Vec<String>,
 }
 
 #[derive(Debug, Clone)]

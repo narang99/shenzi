@@ -7,10 +7,20 @@
 use anyhow::{Context, Result, anyhow};
 use log::warn;
 
+use lazy_static::lazy_static;
+use regex::Regex;
 use std::{
     path::{Component, Path, PathBuf},
     str::FromStr,
 };
+
+pub fn marker_file_name() -> String {
+    "SHENZI_MARKER".to_string()
+}
+
+pub fn marker_file_path(dist: &Path) -> PathBuf {
+    dist.join(marker_file_name())
+}
 
 pub fn normalize_path(path: &Path) -> PathBuf {
     // copied from cargo
@@ -90,7 +100,6 @@ pub fn split_colon_separated_into_valid_search_paths(term: Option<&String>) -> V
     }
 }
 
-
 pub fn get_lib_name(path: &PathBuf) -> Result<String> {
     let lib_name = path
         .file_name()
@@ -102,4 +111,45 @@ pub fn get_lib_name(path: &PathBuf) -> Result<String> {
             )
         })?;
     Ok(lib_name.to_string())
+}
+
+lazy_static! {
+    static ref SONAME_RE: Regex = Regex::new(r"\.so([.\da-zA-Z]*)$")
+        .expect("failed to compiled regex for detecting shared library names");
+}
+pub fn is_maybe_object_file(path: &Path) -> bool {
+    // this only checks the path extensions
+    // they are not very reliable
+    // you should try parsing after this to see if they really are a shared library
+    match path.to_str() {
+        None => false,
+        Some(path) => {
+            if path.ends_with(".dylib") {
+                true
+            } else if SONAME_RE.is_match(path) {
+                true
+            } else {
+                false
+            }
+        }
+    }
+}
+
+pub fn get_root_dirs() -> Vec<PathBuf> {
+    // TODO: when adding windows support, change this
+    return vec![PathBuf::from("/")];
+}
+
+pub fn cache_loc() -> Result<PathBuf> {
+    let loc = if let Ok(xdg_cache_home) = std::env::var("XDG_CACHE_HOME") {
+        PathBuf::from(xdg_cache_home).join("shenzi")
+    } else if let Ok(home) = std::env::var("HOME") {
+        PathBuf::from(home).join(".cache").join("shenzi")
+    } else {
+        PathBuf::from("/tmp/shenzi")
+    };
+
+    std::fs::create_dir_all(&loc)
+        .context(anyhow!("failed in creating cache at {}", loc.display()))?;
+    Ok(loc)
 }

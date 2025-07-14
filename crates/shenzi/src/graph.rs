@@ -5,7 +5,7 @@ use bimap::BiHashMap;
 use log::info;
 use petgraph::{Direction::Incoming, Graph, algo::toposort, graph::NodeIndex, visit::EdgeRef};
 
-use crate::{factory::Factory, node::Node};
+use crate::{factory::Factory, node::Node, paths::normalize_path};
 
 #[derive(Debug)]
 pub struct FileGraph<T: Factory> {
@@ -101,6 +101,7 @@ impl<T: Factory> FileGraph<T> {
 
         let mut all_parent_idx = Vec::new();
         for p in deps {
+            let p = normalize_path(&p);
             if let Some(parent_idx) = self.idx_by_path.get_by_right(&p) {
                 all_parent_idx.push(*parent_idx);
                 continue;

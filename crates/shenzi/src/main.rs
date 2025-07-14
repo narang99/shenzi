@@ -2,6 +2,7 @@ use std::process::exit;
 
 
 
+
 mod cli;
 mod digest;
 mod factory;
@@ -13,6 +14,8 @@ mod parse;
 mod paths;
 mod pkg;
 mod site_pkgs;
+mod warnings;
+mod external;
 
 fn main() {
     env_logger::init();

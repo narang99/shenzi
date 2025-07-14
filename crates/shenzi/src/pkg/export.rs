@@ -36,7 +36,6 @@ impl Export for Pkg {
                         )
                     })?;
                 }
-
             },
 
             Pkg::SitePackagesBinary { _site_packages: _, alias: _, rel_path: _, sha: _ }

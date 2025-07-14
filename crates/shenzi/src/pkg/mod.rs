@@ -7,13 +7,10 @@ use log::info;
 use pathdiff::diff_paths;
 
 use crate::{
-    gather::NodeFactory,
-    graph::FileGraph,
-    node::Node,
-    pkg::{
-        export::{Export, mk_parent_dirs},
+    external::download_patchelf, gather::NodeFactory, graph::FileGraph, node::Node, pkg::{
+        export::{mk_parent_dirs, Export},
         paths::ExportedFileTree,
-    },
+    }, warnings::Warning
 };
 
 pub use patch::LibPatch;
@@ -23,13 +20,21 @@ pub mod export;
 pub mod patch;
 pub mod paths;
 
-pub fn move_all_nodes(graph: &FileGraph<NodeFactory>, dist: &PathBuf, main_script_path: &PathBuf) -> Result<PathBuf> {
+pub fn move_all_nodes(
+    graph: &FileGraph<NodeFactory>,
+    dist: &PathBuf,
+    main_script_path: &PathBuf,
+) -> Result<PathBuf> {
     info!("exporting files to dist");
+    download_patchelf().context("error in downloading patchelf")?;
     let total = graph.len();
     let mut i = 0;
     // TODO: parallelize this (we need custom toposort implementation)
     let mut main_destination = None;
-    for node in graph.toposort().context("failed in running toposort on the dependency graph")? {
+    for node in graph
+        .toposort()
+        .context("failed in running toposort on the dependency graph")?
+    {
         if node.path == *main_script_path {
             main_destination = node.pkg.destination(&node.path, dist);
         }
@@ -41,13 +46,32 @@ pub fn move_all_nodes(graph: &FileGraph<NodeFactory>, dist: &PathBuf, main_scrip
         }
     }
 
-    main_destination.ok_or(anyhow!("could not find the final path for main script, script={}", main_script_path.display()))
+    main_destination.ok_or(anyhow!(
+        "could not find the final path for main script, script={}",
+        main_script_path.display()
+    ))
+}
+
+pub fn write_warnings(warnings: Vec<Warning>, dist: &PathBuf) -> Result<(PathBuf, bool)> {
+    let p = dist.join("warnings.txt");
+    if warnings.len() == 0 {
+        Ok((p, false))
+    } else {
+        let contents = warnings
+            .into_iter()
+            .map(|w| format!("{}", w))
+            .collect::<Vec<String>>()
+            .join("\n");
+        fs::write(&p, contents)?;
+        Ok((p, true))
+    }
 }
 
 pub fn move_to_dist(node: &Node, deps: &Vec<Node>, dist: &PathBuf) -> Result<()> {
     // todo: python executable does not have a symlink farm, fix that
     // for that we need to also remove the hardcoding we have done for patching
     // deps are already exported, now we export node
+    println!("moving {} to dist", node.path.display());
 
     let real_path = mk_reals(node, dist).with_context(|| {
         format!(
@@ -156,7 +180,6 @@ fn mk_symlink_farm(node: &Node, deps: &Vec<Node>, dist: &PathBuf) -> Result<Opti
         fs::create_dir_all(&symlink_dir)?;
         for dep in deps {
             let dep_reals_path = dep.pkg.reals(&dep, dist);
-            // println!("dep of node={}, path={} reals={:?}", node.path.display(), dep.path.display(), dep_reals_path);
             match dep_reals_path {
                 None => {},
                 Some(dep_reals_path) => {

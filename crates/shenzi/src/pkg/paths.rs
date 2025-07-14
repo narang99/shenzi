@@ -5,7 +5,7 @@
 // where are the dependencies of the file relative to the file? for patching?
 // where is the destination?
 
-use std::{os::unix::fs::symlink, path::{Path, PathBuf}};
+use std::path::{Path, PathBuf};
 
 use log::error;
 

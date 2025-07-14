@@ -12,7 +12,7 @@ pub use crate::factory::NodeFactory;
 pub use crate::site_pkgs::PythonPathComponent;
 
 use crate::{
-    factory::Factory, gather::error::MultipleGatherErrors, graph::FileGraph, manifest::{LoadKind, ShenziManifest}, node::{deps::Deps, Node}, parse::{ErrDidNotFindDependencies, ErrDidNotFindDependency}, paths::marker_file_name, pkg::paths::ExportedFileTree, site_pkgs::SitePkgs, warnings::Warning
+    factory::Factory, gather::error::MultipleGatherErrors, graph::FileGraph, manifest::{LoadKind, ShenziManifest}, node::{deps::Deps, Node}, parse::{ErrDidNotFindDependencies, ErrDidNotFindDependency}, paths::marker_file_name, site_pkgs::SitePkgs, warnings::Warning
 };
 
 pub fn build_graph_from_manifest(

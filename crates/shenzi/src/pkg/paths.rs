@@ -5,11 +5,9 @@
 // where are the dependencies of the file relative to the file? for patching?
 // where is the destination?
 
-use std::path::PathBuf;
+use std::{os::unix::fs::symlink, path::{Path, PathBuf}};
 
-use lazy_static::lazy_static;
 use log::error;
-use regex::Regex;
 
 use crate::{
     manifest::Version,
@@ -66,7 +64,7 @@ impl ExportedFileTree for Pkg {
                 sha: _,
             } => path.file_name().map(|p| dist.join("lib").join("l").join(p)),
             Pkg::Binary { sha: _ } => None,
-            Pkg::Executable => Some(dist.join("python").join("bin").join("python")),
+            Pkg::Executable => None,
         }
     }
 
@@ -77,9 +75,18 @@ impl ExportedFileTree for Pkg {
                 alias: _,
                 rel_path: _,
             }
-            | Pkg::Executable
+            // | Pkg::Executable
             | Pkg::ExecPrefixPlain(_)
             | Pkg::PrefixPlain(_) => None,
+            
+
+            // HACK: currently `reals` actually just means that the directory `reals/r`
+            // this is the wrong definition
+            // reals should be the place the file is actually copied, and should just be a single path
+            // destination -> should be a vector of paths where we generate symlinks
+            // currently destination means anything outside reals/r and that's a plain wrong semantic
+            // TODO: fix the above hack
+            Pkg::Executable => Some(dist.join("python").join("bin").join("python")),
 
             Pkg::SitePackagesBinary {
                 _site_packages: _,
@@ -117,12 +124,12 @@ impl ExportedFileTree for Pkg {
             | Pkg::BinaryInLDPath {
                 symlinks: _,
                 sha,
-            } => symlink_farm_path_using_sha(path, dist, sha),
+            } => symlink_farm_path(path, dist, sha),
 
             | Pkg::ExecPrefixBinary(pkgs)
-            | Pkg::PrefixBinary(pkgs) => symlink_farm_path_using_sha(path, dist, &pkgs.sha),
+            | Pkg::PrefixBinary(pkgs) => symlink_farm_path(path, dist, &pkgs.sha),
 
-            | Pkg::Executable => symlink_farm_path(path, dist),
+            | Pkg::Executable => symlink_farm_path_from_file_name(path, dist),
         }
     }
 }
@@ -158,7 +165,12 @@ pub fn stdlib_relative_path(version: &Version) -> PathBuf {
 
 fn reals_path(sha: &str, path: &PathBuf, dist: &PathBuf) -> Option<PathBuf> {
     loose_validate_path_is_file(path);
-    return reals_path_for_sha(sha, path, dist);
+    let os = std::env::consts::OS;
+    if os == "macos" {
+        return reals_path_for_sha(sha, path, dist);
+    } else {
+        return reals_path_using_file_name(path, dist);
+    }
 }
 
 fn reals_path_for_sha(sha: &str, path: &PathBuf, dist: &PathBuf) -> Option<PathBuf> {
@@ -177,17 +189,27 @@ fn reals_path_for_sha(sha: &str, path: &PathBuf, dist: &PathBuf) -> Option<PathB
     Some(reals_dir.join(fname))
 }
 
-fn symlink_farm_path_using_sha(path: &PathBuf, dist: &PathBuf, sha: &str) -> Option<PathBuf> {
+
+fn reals_path_using_file_name(path: &Path, dist: &Path) -> Option<PathBuf> {
+    let fname = match path.file_name() {
+        Some(f) => f,
+        None => return None,
+    };
+    let reals_dir = dist.join("reals").join("r");
+    return Some(reals_dir.join(fname));
+}
+
+fn symlink_farm_path(path: &PathBuf, dist: &PathBuf, sha: &str) -> Option<PathBuf> {
     loose_validate_path_is_file(path);
     let os = std::env::consts::OS;
-    if os == "macos" || os == "linux" {
+    if os == "macos" {
         Some(dist.join("symlinks").join(sha))
     } else {
-        None
+        symlink_farm_path_from_file_name(path, dist)
     }
 }
 
-fn symlink_farm_path(path: &PathBuf, dist: &PathBuf) -> Option<PathBuf> {
+fn symlink_farm_path_from_file_name(path: &PathBuf, dist: &PathBuf) -> Option<PathBuf> {
     loose_validate_path_is_file(path);
     let os = std::env::consts::OS;
     if os == "macos" || os == "linux" {
@@ -211,29 +233,6 @@ fn loose_validate_path_is_file(path: &PathBuf) {
                 "error: found a path which is not a file or does not exist for moving to reals directory, please raise this with the developer, shenzi will ignore this path and move on, path={}",
                 path.display()
             );
-        }
-    }
-}
-
-lazy_static! {
-    static ref SONAME_RE: Regex = Regex::new(r"\.so([.\da-zA-Z]*)$")
-        .expect("failed to compiled regex for detecting shared library names");
-}
-
-pub fn is_maybe_shared_library(path: &PathBuf) -> bool {
-    // this only checks the path extensions
-    // they are not very reliable
-    // you should try parsing after this to see if they really are a shared library
-    match path.to_str() {
-        None => false,
-        Some(path) => {
-            if path.ends_with(".dylib") {
-                true
-            } else if SONAME_RE.is_match(path) {
-                true
-            } else {
-                false
-            }
         }
     }
 }

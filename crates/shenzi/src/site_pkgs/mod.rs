@@ -1,14 +1,17 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{
+    collections::{HashMap, HashSet},
+    path::{Path, PathBuf},
+};
 
 use log::info;
-use rand::{Rng, rng};
+use rand::{rng, Rng};
 
 mod comps;
 
 pub use comps::PythonPathComponent;
 
 use crate::{
-    manifest::{Sys, ShenziManifest},
+    manifest::{ShenziManifest, Sys},
     site_pkgs::comps::get_python_path_mapping,
 };
 
@@ -32,7 +35,8 @@ impl SitePkgs {
         let sys = &manifest.python.sys;
         let stdlib_path = get_stdlib_loc(sys);
         let lib_dynload_path = get_lib_dynload_loc(sys);
-        let site_pkgs = get_site_pkgs_without_prefixes(&sys.path, &lib_dynload_path, &stdlib_path);
+        let site_pkgs = rm_duplicates(&sys.path);
+        let site_pkgs = get_site_pkgs_without_prefixes(&site_pkgs, &lib_dynload_path, &stdlib_path);
         let site_pkgs = only_top_level_site_pkgs(&site_pkgs, &lib_dynload_path, &stdlib_path);
         let site_pkg_by_alias = create_site_pkgs_alias(&site_pkgs);
         let py_path_comps = get_python_path_mapping(
@@ -48,6 +52,11 @@ impl SitePkgs {
             comps: py_path_comps,
         }
     }
+}
+
+fn rm_duplicates(site_pkgs: &Vec<PathBuf>) -> Vec<PathBuf> {
+    let res: HashSet<_> = site_pkgs.iter().cloned().collect();
+    res.iter().cloned().collect()
 }
 
 fn get_site_pkgs_without_prefixes(
@@ -86,11 +95,55 @@ fn only_top_level_site_pkgs(
 }
 
 fn create_site_pkgs_alias(site_pkgs: &Vec<PathBuf>) -> HashMap<PathBuf, String> {
-    let mut site_pkg_aliases = std::collections::HashMap::new();
-    for site_pkg in site_pkgs {
-        site_pkg_aliases.insert(site_pkg.clone(), random_string());
+    site_pkg_by_file_name_or_rand_string(site_pkgs)
+}
+
+fn site_pkg_by_file_name_or_rand_string(site_pkgs: &Vec<PathBuf>) -> HashMap<PathBuf, String> {
+    let mut res = HashMap::new();
+    let mut done = HashSet::new();
+    for pkg in site_pkgs {
+        let alias = get_alias_name(pkg, &done);
+        done.insert(alias.clone());
+        res.insert(pkg.clone(), alias);
     }
-    site_pkg_aliases
+    res
+}
+
+fn get_alias_name(pkg: &Path, done: &HashSet<String>) -> String {
+    let components: Vec<_> = pkg.components().collect();
+    if components.len() >= 2 {
+        let second_last = components[components.len() - 2]
+            .as_os_str()
+            .to_string_lossy()
+            .trim_matches('/')
+            .to_string();
+        let last = components[components.len() - 1]
+            .as_os_str()
+            .to_string_lossy()
+            .trim_matches('/')
+            .to_string();
+
+        if last == "" {
+            random_string()
+        } else if done.contains(&last) {
+            if second_last == "" {
+                random_string()
+            } else {
+                format!("{}_{}", second_last, last)
+            }
+        } else {
+            last
+        }
+    } else if components.len() == 1 {
+        let last = components[0].as_os_str().to_string_lossy().trim_matches('/').to_string();
+        if last == "" {
+            random_string()
+        } else {
+            last
+        }
+    } else {
+        random_string()
+    }
 }
 
 fn is_sub_path_of_other_pkgs(p: &PathBuf, sys_path: &Vec<&PathBuf>) -> bool {

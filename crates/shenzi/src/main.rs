@@ -16,13 +16,16 @@ mod pkg;
 mod site_pkgs;
 mod warnings;
 mod external;
+mod workspace;
+mod ask;
 
 fn main() {
     env_logger::init();
     match cli::run() {
         Ok(_) => {}
         Err(e) => {
-            eprintln!("{:#}", e);
+            eprintln!("error: {:#}", e);
+            eprintln!("exiting");
             exit(1);
         }
     }

@@ -3,6 +3,7 @@ use anyhow::{bail, Result};
 use clap::Parser;
 
 mod build;
+mod init;
 
 
 #[derive(clap::Subcommand, Debug)]
@@ -16,6 +17,7 @@ pub enum Commands {
         #[arg(long, default_value_t = false)]
         skip_warning_checks: bool,
     },
+    Init {},
 }
 
 #[derive(Debug, clap::Parser)]
@@ -37,6 +39,9 @@ pub fn run() -> Result<()> {
             match cmd {
                 Commands::Build { manifest, skip_warning_checks} => {
                     build::run(&manifest, skip_warning_checks)?;
+                },
+                Commands::Init {  } => {
+                    init::run()?;
                 }
             }
         }

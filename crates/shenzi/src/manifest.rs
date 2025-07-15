@@ -128,7 +128,8 @@ mod test {
             },
             "path": ["/Users/hariomnarang/miniconda3/lib/python3.12/site-packages"],
             "executable": "/Users/hariomnarang/miniconda3/bin/python"
-        }
+        },
+        "main": "<path>/to/main.py"
     },
     "env": {
         "PATH": "..."

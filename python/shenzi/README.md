@@ -22,7 +22,11 @@ pip install shenzi
 ```
 
 ## Initializing the workspace
-If you have a project run using `poetry`, run `shenzi init`  
+If you have a project run using `poetry`, run
+```bash
+# only poetry package manager is supported
+shenzi init
+```
 It will ask you some questions and generated `shenzi_workspace.toml` file. The TOML file looks like this.  
 
 ```toml

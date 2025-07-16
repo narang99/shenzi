@@ -27,7 +27,7 @@ If you have a project run using `poetry`, run
 # only poetry package manager is supported
 shenzi init
 ```
-It will ask you some questions and generated `shenzi_workspace.toml` file. The TOML file looks like this.  
+It will ask you some questions and generate `shenzi_workspace.toml` file. The TOML file looks like this.  
 
 ```toml
 # shenzi_workspace.toml

@@ -1,12 +1,11 @@
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result, anyhow, bail};
-use log::info;
+use anyhow::{Result, anyhow, bail};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     paths::normalize_path,
-    workspace::{packaging::Packaging, pylock::poetry},
+    workspace::packaging::Packaging,
 };
 
 mod packaging;

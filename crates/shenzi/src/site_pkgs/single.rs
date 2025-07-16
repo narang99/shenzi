@@ -5,9 +5,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{Context, Result, anyhow, bail};
+use anyhow::{Context, Result, anyhow};
 use configparser::ini::Ini;
-use log::{error, info, warn};
+use log::error;
 
 use crate::paths::{file_name_as_str, normalize_path};
 

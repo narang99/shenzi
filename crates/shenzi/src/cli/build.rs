@@ -1,6 +1,6 @@
 use anyhow::{Context, Result, anyhow, bail};
 use log::info;
-use std::{fs, io::Read, path::PathBuf};
+use std::{fs, io::Read};
 
 use crate::{
     gather::build_graph_from_manifest,

@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 
-use anyhow::{Result, bail};
+use anyhow::Result;
 
 pub fn ask_user(prompt: &str, default: &Option<String>) -> Result<String> {
     let mut value = raw_ask(prompt)?;

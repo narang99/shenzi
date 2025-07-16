@@ -2,7 +2,6 @@ use std::{collections::HashMap, fmt::Display, path::PathBuf};
 
 use anyhow::{Context, Result, anyhow};
 use bimap::BiHashMap;
-use log::info;
 use petgraph::{Direction::Incoming, Graph, algo::toposort, graph::NodeIndex, visit::EdgeRef};
 
 use crate::{factory::Factory, node::Node, paths::normalize_path};

@@ -10,7 +10,7 @@
   - its putting .git folder in
   - adding test dependencies
 - test multiprocessing environments
-  - how does atexit behave in pytest-dist? is it called once?
+  - how does atexit behave in pytest-xdist? is it called once?
   - add multiprocessing guards for LOAD variable
 - [x] tox creates duplicate virtual environments, might need to handle this somehow
   - we are also pushing .git folder inside the dist, need to fix that too

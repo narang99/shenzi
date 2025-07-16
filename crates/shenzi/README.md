@@ -6,13 +6,13 @@
     - this would be useful for say, creating python graphs in parallel in a separate graph
     - creating graphs in chunks of 10, and keep updating the known-libs
   - toposort which provides parallel work units like python graphlib's sorter would help with dist creation
-- dist folder is huge 
+- [x] dist folder is huge 
   - its putting .git folder in
   - adding test dependencies
 - test multiprocessing environments
   - how does atexit behave in pytest-dist? is it called once?
   - add multiprocessing guards for LOAD variable
-- tox creates duplicate virtual environments, might need to handle this somehow
+- [x] tox creates duplicate virtual environments, might need to handle this somehow
   - we are also pushing .git folder inside the dist, need to fix that too
 
 

@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::workspace::packaging::Packaging;
+use crate::workspace::{packaging::Packaging, pylock::poetry};
 
 mod packaging;
 mod pylock;
@@ -31,6 +31,42 @@ mod pylock;
 pub struct ShenziWorkspace {
     pub packaging: Packaging,
     pub execution: Execution,
+
+    #[serde(skip)]
+    pub workspace_file: PathBuf,
+}
+
+impl ShenziWorkspace {
+    pub fn get_required_dependencies(&self) -> Result<Vec<String>> {
+        match self.packaging {
+            Packaging::Poetry(ref pkg) => {
+                pkg.get_required_dependencies()
+            }
+        }
+    }
+}
+
+pub struct InitializedShenziWorkspace {
+    pub workspace: ShenziWorkspace,
+    file: PathBuf
+}
+
+impl InitializedShenziWorkspace {
+    pub fn from_path(file: PathBuf) -> Result<Option<InitializedShenziWorkspace>> {
+        let workspace = get_shenzi_workspace(&file)?;
+        match workspace {
+            Some(workspace) => Ok(Some(Self {workspace, file})),
+            None => Ok(None)
+        }
+    }
+
+    pub fn search() -> Result<Option<InitializedShenziWorkspace>> {
+        Self::from_path(workspace_file_path())
+    }
+
+    pub fn path(&self) -> &Path {
+        &self.file
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -47,16 +83,20 @@ pub fn init_workspace() -> Result<()> {
         bail!("passed main file does not exist, path={}", main_file);
     }
 
+
+    let file_path = workspace_file_path();
     let workspace = ShenziWorkspace {
         packaging: pkg,
-        execution: Execution { main: main_file }
+        execution: Execution { main: main_file },
+        workspace_file: file_path,
     };
 
 
     let content = toml::to_string(&workspace)?;
-    std::fs::write(workspace_file_path(), content)?;
+    std::fs::write(workspace.workspace_file, content)?;
     Ok(())
 }
+
 
 fn get_shenzi_workspace(config_file: &Path) -> Result<Option<ShenziWorkspace>> {
     // if the workspace file does not exist, we return None

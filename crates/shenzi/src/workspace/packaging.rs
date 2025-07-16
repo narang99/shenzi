@@ -25,8 +25,18 @@ use crate::workspace::pylock;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PoetryPackaging {
-    config_file: String,
-    groups: Vec<String>,
+    pub config_file: String,
+    pub groups: Vec<String>,
+}
+
+impl PoetryPackaging {
+    pub fn get_required_dependencies(&self) -> Result<Vec<String>> {
+        let config_file = PathBuf::from(&self.config_file);
+        if !config_file.exists() {
+            bail!("passed lock file for poetry dependency analysis does not exist, path={}", config_file.display());
+        }
+        pylock::poetry::get_required_dependencies(&config_file, &self.groups)
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]

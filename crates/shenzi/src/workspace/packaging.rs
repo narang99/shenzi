@@ -16,12 +16,9 @@ later we can do auto discover but its not needed right now
 
 use anyhow::{Result, bail};
 use serde::{Deserialize, Serialize};
-use std::{
-    io::{self, Write},
-    path::PathBuf,
-};
+use std::path::{Path, PathBuf};
 
-use crate::workspace::pylock;
+use crate::workspace::pylock::{self, common::get_all_valid_package_names_in_path};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PoetryPackaging {
@@ -30,12 +27,18 @@ pub struct PoetryPackaging {
 }
 
 impl PoetryPackaging {
-    pub fn get_required_dependencies(&self) -> Result<Vec<String>> {
-        let config_file = PathBuf::from(&self.config_file);
+    pub fn get_required_dependencies(&self, workspace_path: &Path) -> Result<Vec<String>> {
+        let config_file = workspace_path.join(&self.config_file);
         if !config_file.exists() {
-            bail!("passed lock file for poetry dependency analysis does not exist, path={}", config_file.display());
+            bail!(
+                "passed lock file for poetry dependency analysis does not exist, path={}",
+                config_file.display()
+            );
         }
-        pylock::poetry::get_required_dependencies(&config_file, &self.groups)
+        let mut deps = pylock::poetry::get_required_dependencies(&config_file, &self.groups)?;
+        deps.extend(get_all_valid_package_names_in_path(workspace_path)?);
+
+        Ok(deps)
     }
 }
 

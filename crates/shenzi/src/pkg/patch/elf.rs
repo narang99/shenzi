@@ -6,7 +6,7 @@ use std::{
 use anyhow::{Context, Result, anyhow, bail};
 use pathdiff::diff_paths;
 
-use crate::{external::patchelf_path, parse::Elf, paths::get_lib_name};
+use crate::{external::patchelf_path, parse::Elf, paths::file_name_as_str};
 
 pub fn patch_elf_for_destination(
     dest_path: &PathBuf,
@@ -114,7 +114,7 @@ fn modify_all_dt_needed(
     elf: &Elf,
 ) -> Result<()> {
     for (old, parent_path) in &elf.dt_needed {
-        let lib_name = get_lib_name(&parent_path)?;
+        let lib_name = file_name_as_str(&parent_path)?;
         let lib_in_farm = symlink_farm_path.join(&lib_name);
         if !lib_in_farm.exists() {
             bail!(

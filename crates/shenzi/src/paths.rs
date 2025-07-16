@@ -100,7 +100,7 @@ pub fn split_colon_separated_into_valid_search_paths(term: Option<&String>) -> V
     }
 }
 
-pub fn get_lib_name(path: &PathBuf) -> Result<String> {
+pub fn file_name_as_str(path: &PathBuf) -> Result<String> {
     let lib_name = path
         .file_name()
         .and_then(|file_name| file_name.to_str())
@@ -152,4 +152,14 @@ pub fn cache_loc() -> Result<PathBuf> {
     std::fs::create_dir_all(&loc)
         .context(anyhow!("failed in creating cache at {}", loc.display()))?;
     Ok(loc)
+}
+
+pub fn make_executable(path: &Path) -> Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+    let mut perms = std::fs::metadata(&path)
+        .context("failed to get patchelf permissions")?
+        .permissions();
+    perms.set_mode(0o755);
+    std::fs::set_permissions(&path, perms).context("failed to set patchelf permissions")?;
+    Ok(())
 }

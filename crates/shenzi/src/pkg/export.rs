@@ -1,9 +1,9 @@
-use std::{fs, path::PathBuf};
+use std::{fs, path::{Path, PathBuf}};
 
 use anyhow::{Context, Result, anyhow};
 use pathdiff::diff_paths;
 
-use crate::node::Pkg;
+use crate::{node::Pkg, paths::make_executable};
 
 pub trait Export {
     fn to_destination(&self, path: &PathBuf, dest: &PathBuf, dist: &PathBuf) -> Result<()>;
@@ -18,7 +18,11 @@ impl Export for Pkg {
             | Pkg::PrefixPlain(_)
             | Pkg::ExecPrefixPlain(_) => {
                 fs::copy(path, dest)?;
-            }
+            },
+            Pkg::PlainPyBinaryFile => {
+                fs::copy(path, dest)?;
+                mk_file_executable(path, true)?;
+            },
 
             Pkg::BinaryInLDPath { symlinks, sha: _ } => {
                 let (rel_path, dest_dir) = mk_symlink_in_dest(dest, dist, path)?;
@@ -43,10 +47,37 @@ impl Export for Pkg {
             | Pkg::PrefixBinary(_)
             | Pkg::ExecPrefixBinary(_) => {
                 mk_symlink_in_dest(dest, dist, path)?;
-            }
+            },
+            | Pkg::BinaryInPath { sha: _ } => {
+                mk_symlink_in_dest(dest, dist, path)?;
+                mk_file_executable(path, false)?;
+            },
         };
         Ok(())
     }
+}
+
+
+fn mk_file_executable(path: &Path, is_plain: bool) -> Result<()> {
+    if is_plain {
+        let ext = path.extension().and_then(|ext| ext.to_str()).unwrap_or("");
+        if ext == "py" {
+            prepend_shebang(path, "#!/usr/bin/env python3")?;
+        } else if ext == "sh" {
+            prepend_shebang(path, "#!/usr/bin/env bash")?;
+        }
+    }
+
+    make_executable(path)?;
+    Ok(())
+}
+
+
+fn prepend_shebang(path: &Path, shebang: &str) -> Result<()> {
+    let content = std::fs::read_to_string(path)?;
+    let new_content = format!("{}\n{}", shebang, content);
+    std::fs::write(path, new_content)?;
+    Ok(())
 }
 
 

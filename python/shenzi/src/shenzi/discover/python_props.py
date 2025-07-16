@@ -23,4 +23,6 @@ def get_python_props() -> Python:
             executable=realpath(sys.executable),
         ),
         main=str(Path(sys.argv[0]).resolve()),
+        allowed_packages=None,
+        cwd=str(Path.cwd()),
     )

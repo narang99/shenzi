@@ -108,7 +108,7 @@ impl<T: Factory> FileGraph<T> {
             }
             let parent_node = self.factory.make(&p, known_libs, &search_paths)?;
             if let Some(parent_node) = parent_node {
-                info!("adding node recursively in graph, path={}", p.display());
+                // info!("adding node recursively in graph, path={}", p.display());
                 let parent_idx = self
                     .add_tree(parent_node, known_libs, false, &search_paths)
                     .context(anyhow!("file: {}", p.display()))?;
@@ -209,6 +209,16 @@ mod test {
                 .cloned()
                 .unwrap_or_else(Vec::new);
             Ok(Some(Node::mock(path.clone(), deps)?))
+        }
+
+        fn make_binary(
+            &self,
+            path: &PathBuf,
+            known_libs: &HashMap<String, PathBuf>,
+            extra_search_paths: &Vec<PathBuf>,
+        ) -> Result<Option<Node>> {
+            // TODO add actual binary creation support if neded
+            self.make(path, known_libs, extra_search_paths)
         }
 
         fn make_py_executable(&self, path: &PathBuf) -> Result<Node> {

@@ -6,10 +6,16 @@ use log::info;
 pub use crate::factory::core::Factory;
 
 use crate::{
-    digest::make_digest, factory::{
+    digest::make_digest,
+    factory::{
         deps::create_deps,
         pkg::{get_exec_prefix_pkg, get_prefix_pkg, get_site_packages_pkg},
-    }, manifest::{Skip, Version}, node::{deps::Deps, Node, Pkg}, paths::normalize_path, paths::is_maybe_object_file, site_pkgs::SitePkgs
+    },
+    manifest::{Skip, Version},
+    node::{Node, Pkg, deps::Deps},
+    paths::is_maybe_object_file,
+    paths::normalize_path,
+    site_pkgs::SitePkgs,
 };
 
 #[derive(Debug, Clone)]
@@ -118,6 +124,28 @@ impl Factory for NodeFactory {
         )?))
     }
 
+    fn make_binary(
+        &self,
+        path: &PathBuf,
+        known_libs: &HashMap<String, PathBuf>,
+        extra_search_paths: &Vec<PathBuf>,
+    ) -> Result<Option<Node>> {
+        let deps = self.create_deps(&path, known_libs, extra_search_paths, true)?;
+        let is_shared_library = deps.is_shared_library();
+        let pkg = if is_shared_library {
+            if self.should_skip(path, is_shared_library) {
+                info!("skip: {}", path.display());
+                return Ok(None);
+            }
+            Pkg::BinaryInPath {
+                sha: make_digest(path)?,
+            }
+        } else {
+            Pkg::PlainPyBinaryFile
+        };
+        Ok(Some(Node::new(path.clone(), pkg, deps)?))
+    }
+
     fn make(
         &self,
         path: &PathBuf,
@@ -141,7 +169,12 @@ impl Factory for NodeFactory {
         if p.starts_with(&self.site_pkgs.lib_dynload) {
             return Ok(Some(Node::new(
                 p.clone(),
-                get_exec_prefix_pkg(&p, &self.site_pkgs.lib_dynload, &self.version, is_shared_library)?,
+                get_exec_prefix_pkg(
+                    &p,
+                    &self.site_pkgs.lib_dynload,
+                    &self.version,
+                    is_shared_library,
+                )?,
                 deps,
             )?));
         }

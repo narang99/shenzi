@@ -11,7 +11,7 @@ use log::error;
 
 use crate::{
     manifest::Version,
-    node::{Node, Pkg},
+    node::{Node, Pkg}, paths::file_name_as_str,
 };
 
 pub trait ExportedFileTree {
@@ -63,6 +63,7 @@ impl ExportedFileTree for Pkg {
                 symlinks: _,
                 sha: _,
             } => path.file_name().map(|p| dist.join("lib").join("l").join(p)),
+            Pkg::BinaryInPath { sha: _ } | Pkg::PlainPyBinaryFile => path.file_name().map(|p| dist.join("bin").join("b").join(p)),
             Pkg::Binary { sha: _ } => None,
             Pkg::Executable => None,
         }
@@ -75,8 +76,8 @@ impl ExportedFileTree for Pkg {
                 alias: _,
                 rel_path: _,
             }
-            // | Pkg::Executable
             | Pkg::ExecPrefixPlain(_)
+            | Pkg::PlainPyBinaryFile
             | Pkg::PrefixPlain(_) => None,
             
 
@@ -95,6 +96,7 @@ impl ExportedFileTree for Pkg {
                 sha,
             }
             | Pkg::Binary { sha }
+            | Pkg::BinaryInPath { sha }
             | Pkg::BinaryInLDPath { symlinks: _, sha } => {
                 reals_path(&sha, &node.path, dist)
             }
@@ -112,6 +114,7 @@ impl ExportedFileTree for Pkg {
                 rel_path: _,
             }
             | Pkg::ExecPrefixPlain(_)
+            | Pkg::PlainPyBinaryFile
             | Pkg::PrefixPlain(_) => None,
 
             Pkg::SitePackagesBinary {
@@ -121,6 +124,7 @@ impl ExportedFileTree for Pkg {
                 sha,
             }
             | Pkg::Binary { sha }
+            | Pkg::BinaryInPath { sha }
             | Pkg::BinaryInLDPath {
                 symlinks: _,
                 sha,
@@ -165,24 +169,18 @@ pub fn stdlib_relative_path(version: &Version) -> PathBuf {
 
 fn reals_path(sha: &str, path: &PathBuf, dist: &PathBuf) -> Option<PathBuf> {
     loose_validate_path_is_file(path);
-    let os = std::env::consts::OS;
-    if os == "macos" {
-        return reals_path_for_sha(sha, path, dist);
-    } else {
-        return reals_path_using_file_name(path, dist);
-    }
+    return reals_path_for_sha(sha, path, dist);
 }
 
 fn reals_path_for_sha(sha: &str, path: &PathBuf, dist: &PathBuf) -> Option<PathBuf> {
-    let fname = match path.extension() {
-        Some(ext) => format!(
-            "{}.{}",
-            sha,
-            ext.to_str().expect(&format!(
-                "failed in converting extension {} to string",
-                ext.display()
-            ))
-        ),
+    let fname = match path.extension().and_then(|ext| ext.to_str()) {
+        Some(ext) => {
+            match file_name_as_str(path) {
+                Ok(file_name) => format!("{}_{}.{}", sha, file_name, ext),
+                Err(_) => format!("{}.{}", sha, ext),
+            }
+            
+        },
         None => sha.to_string(),
     };
     let reals_dir = dist.join("reals").join("r");
@@ -190,7 +188,7 @@ fn reals_path_for_sha(sha: &str, path: &PathBuf, dist: &PathBuf) -> Option<PathB
 }
 
 
-fn reals_path_using_file_name(path: &Path, dist: &Path) -> Option<PathBuf> {
+fn _reals_path_using_file_name(path: &Path, dist: &Path) -> Option<PathBuf> {
     let fname = match path.file_name() {
         Some(f) => f,
         None => return None,

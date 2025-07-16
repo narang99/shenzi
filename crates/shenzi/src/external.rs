@@ -11,7 +11,7 @@ use flate2::read::GzDecoder;
 use log::info;
 use tar::Archive;
 
-use crate::paths::cache_loc;
+use crate::paths::{cache_loc, make_executable};
 
 pub fn patchelf_path() -> Result<PathBuf> {
     cache_loc()
@@ -84,14 +84,4 @@ fn from_tarball(tarball: &Path, file_to_extract: &Path, dest: &Path) -> Result<(
         file_to_extract.display(),
         tarball.display()
     );
-}
-
-fn make_executable(path: &Path) -> Result<()> {
-    use std::os::unix::fs::PermissionsExt;
-    let mut perms = std::fs::metadata(&path)
-        .context("failed to get patchelf permissions")?
-        .permissions();
-    perms.set_mode(0o755);
-    std::fs::set_permissions(&path, perms).context("failed to set patchelf permissions")?;
-    Ok(())
 }

@@ -1,4 +1,4 @@
-use crate::{parse::Macho, paths::get_lib_name};
+use crate::{parse::Macho, paths::file_name_as_str};
 // patching libraries to work with the new symlink tree
 // basically all install_name_tool operations
 
@@ -38,7 +38,7 @@ pub fn patch_macho(mach: &Macho, reals_path: &PathBuf, symlink_farm_path: &PathB
     for rpath in &mach.all_rpaths {
         rm_rpath(rpath, reals_path)?;
     }
-    let lib_name = get_lib_name(reals_path)?;
+    let lib_name = file_name_as_str(reals_path)?;
     let rpath = get_new_rpath(reals_path, symlink_farm_path)?;
     modify_load_cmds(reals_path, symlink_farm_path, mach)?;
     add_rpath(&rpath, reals_path)?;
@@ -50,7 +50,7 @@ pub fn patch_macho(mach: &Macho, reals_path: &PathBuf, symlink_farm_path: &PathB
 
 fn modify_load_cmds(reals_path: &PathBuf, symlink_farm_path: &PathBuf, mach: &Macho) -> Result<()> {
     for (load_cmd, parent_path) in &mach.load_cmds {
-        let lib_name = get_lib_name(&parent_path)?;
+        let lib_name = file_name_as_str(&parent_path)?;
         let lib_in_farm = symlink_farm_path.join(&lib_name);
         if !lib_in_farm.exists() {
             bail!(

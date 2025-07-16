@@ -1,13 +1,14 @@
 use anyhow::{Context, Result, anyhow, bail};
+use log::info;
 use std::{fs, io::Read, path::PathBuf};
 
 use crate::{
     gather::build_graph_from_manifest,
-    manifest::ShenziManifest,
+    manifest::{Bin, ShenziManifest},
     paths::marker_file_path,
     pkg::{bootstrap::write_bootstrap_script, move_all_nodes, write_warnings},
     warnings::validate_warnings,
-    workspace::{InitializedShenziWorkspace},
+    workspace::InitializedShenziWorkspace,
 };
 
 pub fn run(manifest: &str, skip_warning_checks: bool) -> Result<()> {
@@ -24,7 +25,8 @@ pub fn run(manifest: &str, skip_warning_checks: bool) -> Result<()> {
 
     let manifest = get_manifest(&manifest)?;
     let (graph, path_components, mut warnings) =
-        build_graph_from_manifest(&manifest, &manifest.python.cwd).context("failed in building graph")?;
+        build_graph_from_manifest(&manifest, &manifest.python.cwd)
+            .context("failed in building graph")?;
     let main_destination = move_all_nodes(&graph, &dist, &manifest.python.main)?;
     write_bootstrap_script(
         &dist,
@@ -64,7 +66,6 @@ fn read_manifest_from_path_or_stdio(manifest: &str) -> Result<String> {
     Ok(contents)
 }
 
-
 fn get_manifest(manifest: &str) -> Result<ShenziManifest> {
     let shenzi_workspace = InitializedShenziWorkspace::search()?;
     let manifest = read_manifest_from_path_or_stdio(manifest)
@@ -76,12 +77,33 @@ fn get_manifest(manifest: &str) -> Result<ShenziManifest> {
     Ok(manifest)
 }
 
-fn merge_manifest_and_shenzi_workspace_manifest(manifest: &mut ShenziManifest, workspace: &InitializedShenziWorkspace) -> Result<()> {
-    manifest.python.main = PathBuf::from(&workspace.workspace.execution.main);
+fn merge_manifest_and_shenzi_workspace_manifest(
+    manifest: &mut ShenziManifest,
+    workspace: &InitializedShenziWorkspace,
+) -> Result<()> {
+    manifest.python.main = workspace.main_path();
     if !manifest.python.main.exists() {
-        bail!("main file in shenzi workspace file does not exist, path={}", manifest.python.main.display());
+        bail!(
+            "main file in shenzi workspace file does not exist, path={}",
+            manifest.python.main.display()
+        );
     }
-    let deps = workspace.workspace.get_required_dependencies()?;
+    let deps = workspace.get_required_dependencies()?;
     manifest.python.allowed_packages = Some(deps);
+    let extra_binaries: Vec<Bin> = workspace
+        .workspace
+        .binaries
+        .iter()
+        .map(|b| Bin {
+            path: b.to_string(),
+        })
+        .collect();
+    manifest.bins.extend(extra_binaries);
+    info!(
+        "merging manifest file with workspace, main-file={} required-dependencies={:?} binaries={:?}",
+        manifest.python.main.display(),
+        manifest.python.allowed_packages,
+        manifest.bins,
+    );
     Ok(())
 }

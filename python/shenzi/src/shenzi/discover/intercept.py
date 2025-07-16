@@ -71,7 +71,7 @@ def exit_handler(prefixes_to_skip: list[str]):
     _validate_prepared_loads(loads)
 
     dump_loc = os.environ.get(DUMP_LOC_ENV_VAR, DEFAULT_LOC)
-    payload = shenziDiscovery(
+    payload = ShenziDiscovery(
         loads=[
             Load(path=load.path, symlinks=list(param.symlinks), kind=load.kind)
             for load, param in loads.items()
@@ -80,6 +80,7 @@ def exit_handler(prefixes_to_skip: list[str]):
         python=get_python_props(),
         skip=Skip(prefixes=prefixes_to_skip, libs=[]),
         env={str(k): str(v) for k, v in os.environ.items()},
+        bins=[],
     )
     with open(dump_loc, "w") as f:
         json.dump(payload.to_dict(), f)

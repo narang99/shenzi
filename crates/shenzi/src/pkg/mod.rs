@@ -71,8 +71,6 @@ pub fn move_to_dist(node: &Node, deps: &Vec<Node>, dist: &PathBuf) -> Result<()>
     // todo: python executable does not have a symlink farm, fix that
     // for that we need to also remove the hardcoding we have done for patching
     // deps are already exported, now we export node
-    println!("moving {} to dist", node.path.display());
-
     let real_path = mk_reals(node, dist).with_context(|| {
         format!(
             "could not create reals directory for path={} dist={}",

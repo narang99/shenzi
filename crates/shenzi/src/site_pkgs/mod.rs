@@ -7,8 +7,10 @@ use log::info;
 use rand::{rng, Rng};
 
 mod comps;
+mod single;
 
 pub use comps::PythonPathComponent;
+pub use single::{PyPackage, normalize_package_name};
 
 use crate::{
     manifest::{ShenziManifest, Sys},

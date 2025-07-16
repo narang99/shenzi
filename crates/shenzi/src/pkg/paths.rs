@@ -169,22 +169,21 @@ pub fn stdlib_relative_path(version: &Version) -> PathBuf {
 
 fn reals_path(sha: &str, path: &PathBuf, dist: &PathBuf) -> Option<PathBuf> {
     loose_validate_path_is_file(path);
-    return reals_path_for_sha(sha, path, dist);
+    let fname = file_name_from_sha_and_original_path(path, sha);
+    let reals_dir = dist.join("reals").join("r");
+    Some(reals_dir.join(fname))
 }
 
-fn reals_path_for_sha(sha: &str, path: &PathBuf, dist: &PathBuf) -> Option<PathBuf> {
-    let fname = match path.extension().and_then(|ext| ext.to_str()) {
+fn file_name_from_sha_and_original_path(path: &PathBuf, sha: &str) -> String {
+    match path.extension().and_then(|ext| ext.to_str()) {
         Some(ext) => {
             match file_name_as_str(path) {
                 Ok(file_name) => format!("{}_{}.{}", sha, file_name, ext),
                 Err(_) => format!("{}.{}", sha, ext),
             }
-            
         },
         None => sha.to_string(),
-    };
-    let reals_dir = dist.join("reals").join("r");
-    Some(reals_dir.join(fname))
+    }
 }
 
 
@@ -199,12 +198,8 @@ fn _reals_path_using_file_name(path: &Path, dist: &Path) -> Option<PathBuf> {
 
 fn symlink_farm_path(path: &PathBuf, dist: &PathBuf, sha: &str) -> Option<PathBuf> {
     loose_validate_path_is_file(path);
-    let os = std::env::consts::OS;
-    if os == "macos" {
-        Some(dist.join("symlinks").join(sha))
-    } else {
-        symlink_farm_path_from_file_name(path, dist)
-    }
+    let file_name = file_name_from_sha_and_original_path(path, sha);
+    Some(dist.join("symlinks").join(file_name))
 }
 
 fn symlink_farm_path_from_file_name(path: &PathBuf, dist: &PathBuf) -> Option<PathBuf> {

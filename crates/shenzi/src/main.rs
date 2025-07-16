@@ -21,6 +21,7 @@ mod ask;
 
 fn main() {
     env_logger::init();
+    lief::logging::set_level(lief::logging::Level::ERR);
     match cli::run() {
         Ok(_) => {}
         Err(e) => {

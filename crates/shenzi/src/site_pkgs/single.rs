@@ -98,7 +98,7 @@ impl PyPackage {
         Ok(Some(std::fs::read_to_string(&record)?))
     }
 
-    pub fn get_installed_files(&self) -> Result<Vec<PathBuf>> {
+    pub fn get_installed_files(&self) -> Result<(Vec<PathBuf>, Vec<PathBuf>)> {
         match self.read_record() {
             Err(e) => Err(e),
             Ok(None) => {
@@ -106,73 +106,31 @@ impl PyPackage {
                     "RECORD file does not exist inside dist-info folder, corrupt python package, dist-info={}. shenzi will skip this folder",
                     self.dist_info.display()
                 );
-                return Ok(Vec::new());
-            },
-            Ok(Some(contents)) => {
-                Ok(self.files_from_record(&contents))
-            },
+                return Ok((Vec::new(), Vec::new()));
+            }
+            Ok(Some(contents)) => Ok(self.files_from_record(&contents)),
         }
     }
 
-    pub fn get_binaries(&self) -> Result<Vec<PathBuf>> {
-        match self.read_record() {
-            Err(e) => Err(e),
-            Ok(None) => {
-                Ok(Vec::new())
-            },
-            Ok(Some(contents)) => {
-                let names = get_binary_names_from_entry_point(&self.dist_info)?;
-                info!("{} binary namessssssssss: {:?}", self.dist_info.display(), names);
-                Ok(self.binaries_from_record(&contents, names))
-            },
-        }
+    pub fn get_binaries_from_paths(
+        &self,
+        paths_outside_site_packages: Vec<PathBuf>,
+    ) -> Result<(Vec<PathBuf>, Vec<PathBuf>)> {
+        let names = get_binary_names_from_entry_point(&self.dist_info)?;
+        Ok(paths_outside_site_packages
+            .into_iter()
+            .partition(|f| match file_name_as_str(&f) {
+                Ok(file_name) => names.contains(&file_name),
+                Err(_) => false,
+            }))
     }
 
-    fn binaries_from_record(&self, record_contents: &str, binary_names: Vec<String>) -> Vec<PathBuf> {
-        let binary_names: HashSet<String> = binary_names.into_iter().collect();
+    fn files_from_record(&self, record_contents: &str) -> (Vec<PathBuf>, Vec<PathBuf>) {
         self.raw_files_from_record(record_contents)
             .iter()
-            .filter_map(|s| {
-                let f = self.site_package_path.join(s);
-                if f.exists() {
-                    match file_name_as_str(&f) {
-                        Ok(file_name) => {
-                            if binary_names.contains(&file_name) {
-                                Some(normalize_path(&f))
-                            } else {
-                                None
-                            }
-                        },
-                        Err(_) => None,
-                    }
-                } else {
-                    None
-                }
-            })
-            .collect()
-    }
-
-    fn files_from_record(&self, record_contents: &str) -> Vec<PathBuf> {
-        self.raw_files_from_record(record_contents)
-            .iter()
-            .filter_map(|s| {
-                let f = self.site_package_path.join(s);
-                if f.exists() {
-                    let f = normalize_path(&f);
-                    if f.starts_with(&self.site_package_path) {
-                        Some(f)
-                    } else {
-                        warn!(
-                            "found a file in dist-info record which is outside site-packages, skipping. site_package_path={} dist_info={} file_path={}",
-                            self.site_package_path.display(), self.dist_info.display(), f.display()
-                        );
-                        None
-                    }
-                } else {
-                    None
-                }
-            })
-            .collect()
+            .map(|s| normalize_path(&self.site_package_path.join(s)))
+            .filter(|f| f.exists())
+            .partition(|f| f.starts_with(&self.site_package_path))
     }
 
     fn raw_files_from_record(&self, record_contents: &str) -> Vec<String> {

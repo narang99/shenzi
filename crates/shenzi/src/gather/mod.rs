@@ -399,7 +399,7 @@ fn add_using_dist_info(
         let py_pkg =
             PyPackage::new(dist_info).context("failed in building PyPackage for dist_info")?;
         if py_pkg.should_include_in_dist(allowed_packages) {
-            let paths = py_pkg.get_installed_files()?;
+            let (paths, outside_site_packages) = py_pkg.get_installed_files()?;
             build_graph_from_paths(
                 paths,
                 g,
@@ -409,7 +409,17 @@ fn add_using_dist_info(
                 replace,
                 extra_search_paths,
             );
-            let binaries = py_pkg.get_binaries()?;
+            let (binaries, rejected) = py_pkg.get_binaries_from_paths(outside_site_packages)?;
+            if rejected.len() > 0 {
+                warn!(
+                    "found files outside site-packages from dist-info which were rejected, reason: the files are not listed in entry_points.txt: \n{}",
+                    rejected
+                        .into_iter()
+                        .map(|p| format!("\t{}", p.to_string_lossy()))
+                        .collect::<Vec<_>>()
+                        .join("\n")
+                )
+            }
             if binaries.len() > 0 {
                 info!(
                     "found binaries in package (dist-info), dist-info={}",

@@ -52,11 +52,21 @@ pub fn normalize_path(path: &Path) -> PathBuf {
     ret
 }
 
-pub fn is_sys_lib(path: &str) -> bool {
+pub fn is_sys_lib_mac(path: &str) -> bool {
     path.starts_with("/usr/lib/")
         || path.starts_with("/System/Library/Frameworks/")
         || path.starts_with("/System/Library/PrivateFrameworks/")
 }
+
+pub fn is_sys_lib_linux(path: &str) -> bool {
+    if let Ok(fname) = file_name_as_str(&PathBuf::from(path)) {
+        if fname.starts_with("libc.so") || fname.starts_with("libpthread.so") {
+            return true;
+        }
+    }
+    return false;
+}
+
 
 pub fn to_string_path(path: &Path) -> Result<String> {
     path.to_str().map(|s| s.to_string()).with_context(|| {

@@ -5,7 +5,7 @@ use lief::elf::{Binary, DynamicEntries};
 
 use crate::{
     parse::{error::ErrDidNotFindDependency, search::linux::parse_linux_rpath, Elf},
-    paths::split_colon_separated_into_valid_search_paths,
+    paths::{is_sys_lib_linux, split_colon_separated_into_valid_search_paths},
 };
 
 pub fn parse(
@@ -52,6 +52,9 @@ fn do_parse(
     let mut dt_needed: HashMap<String, PathBuf> = HashMap::new();
 
     for lib in &libs_needed {
+        if is_sys_lib_linux(lib) {
+            continue;
+        }
         match crate::parse::search::linux::search(
             lib,
             &dt_rpath_bufs,

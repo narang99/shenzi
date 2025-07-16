@@ -14,7 +14,10 @@ DUMP_LOC_ENV_VAR = "SHENZI_JSON"
 DEFAULT_LOC = "shenzi.json"
 
 
-LOADS: dict[LocalLoad, LoadParams] = {}
+from multiprocessing import Manager
+
+_manager = Manager()
+LOADS = _manager.dict()  # type: ignore
 
 
 def monkey_patch_dlopen():
@@ -67,7 +70,7 @@ def main_exit_handler(pkgs_to_skip: list[str]):
 def exit_handler(prefixes_to_skip: list[str]):
     from copy import deepcopy
 
-    loads: dict[LocalLoad, LoadParams] = deepcopy(LOADS)
+    loads = LOADS
     _validate_prepared_loads(loads)
 
     dump_loc = os.environ.get(DUMP_LOC_ENV_VAR, DEFAULT_LOC)

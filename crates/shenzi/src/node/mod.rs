@@ -53,6 +53,9 @@ pub enum Pkg {
     // a python file which is in path as a binary
     PlainPyBinaryFile,
 
+    // Main script if not inside site-packages (has to be pushed to the base of dist)
+    MainPyScript,
+
     ExecPrefixPlain(PrefixPlain),
     ExecPrefixBinary(PrefixBinary),
     PrefixPlain(PrefixPlain),

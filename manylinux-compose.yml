@@ -1,0 +1,14 @@
+services:
+  manylinux:
+    build:
+      context: .
+      dockerfile: python/shenzi/scripts/manylinux.Dockerfile
+    platform: linux/amd64
+    stdin_open: true
+    tty: true
+    volumes:
+    - cargo_cache:/crates/shenzi/target
+
+
+volumes:
+  cargo_cache: {}

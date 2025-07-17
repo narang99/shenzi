@@ -66,6 +66,7 @@ impl ExportedFileTree for Pkg {
             Pkg::BinaryInPath { sha: _ } | Pkg::PlainPyBinaryFile => path.file_name().map(|p| dist.join("bin").join("b").join(p)),
             Pkg::Binary { sha: _ } => None,
             Pkg::Executable => None,
+            Pkg::MainPyScript => Some(dist.join("main.py")),
         }
     }
 
@@ -78,6 +79,7 @@ impl ExportedFileTree for Pkg {
             }
             | Pkg::ExecPrefixPlain(_)
             | Pkg::PlainPyBinaryFile
+            | Pkg::MainPyScript
             | Pkg::PrefixPlain(_) => None,
             
 
@@ -115,6 +117,7 @@ impl ExportedFileTree for Pkg {
             }
             | Pkg::ExecPrefixPlain(_)
             | Pkg::PlainPyBinaryFile
+            | Pkg::MainPyScript
             | Pkg::PrefixPlain(_) => None,
 
             Pkg::SitePackagesBinary {
@@ -178,8 +181,8 @@ fn file_name_from_sha_and_original_path(path: &PathBuf, sha: &str) -> String {
     match path.extension().and_then(|ext| ext.to_str()) {
         Some(ext) => {
             match file_name_as_str(path) {
-                Ok(file_name) => format!("{}_{}.{}", sha, file_name, ext),
-                Err(_) => format!("{}.{}", sha, ext),
+                Ok(file_name) => format!("{}_{}", &sha[..4], file_name),
+                Err(_) => format!("{}.{}", &sha[..10], ext),
             }
         },
         None => sha.to_string(),

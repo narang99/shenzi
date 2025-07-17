@@ -192,13 +192,22 @@ fn build_graph(
         &executable_extra_paths_to_search,
     )?;
 
+    if !g.contains_path(&manifest.python.main) {
+        g.add_tree(
+            factory.make_main_py_script(&manifest.python.main)?,
+            &known_libs,
+            true,
+            &Vec::new(),
+        )?;
+    }
+
     Ok((g, warnings))
 }
 
-fn get_normalized_allowed_packages(manifest: &ShenziManifest) -> HashSet<String> {
+fn get_normalized_allowed_packages(manifest: &ShenziManifest) -> Option<HashSet<String>> {
     match manifest.python.allowed_packages {
-        None => HashSet::new(),
-        Some(ref pkgs) => pkgs.iter().map(|p| normalize_package_name(p)).collect(),
+        None => None,
+        Some(ref pkgs) => Some(pkgs.iter().map(|p| normalize_package_name(p)).collect()),
     }
 }
 
@@ -349,7 +358,7 @@ fn add_site_packages(
     known_libs: &HashMap<String, PathBuf>,
     replace: bool,
     extra_search_paths: &Vec<PathBuf>,
-    allowed_packages: &HashSet<String>,
+    allowed_packages: &Option<HashSet<String>>,
 ) -> Result<()> {
     // dist-info gives the exact files we should include
     let added_packages = add_using_dist_info(
@@ -388,7 +397,7 @@ fn add_using_dist_info(
     known_libs: &HashMap<String, PathBuf>,
     replace: bool,
     extra_search_paths: &Vec<PathBuf>,
-    allowed_packages: &HashSet<String>,
+    allowed_packages: &Option<HashSet<String>>,
 ) -> Result<HashSet<String>> {
     // we go through all folders directly inside this directory, get dist-info
     // ask dist-info what all we can add
@@ -447,7 +456,7 @@ fn add_remaining_in_site_packages(
     known_libs: &HashMap<String, PathBuf>,
     replace: bool,
     extra_search_paths: &Vec<PathBuf>,
-    allowed_packages: &HashSet<String>,
+    allowed_packages: &Option<HashSet<String>>,
     added_packages: &HashSet<String>,
 ) -> Result<()> {
     for entry in std::fs::read_dir(directory)
@@ -461,7 +470,11 @@ fn add_remaining_in_site_packages(
                 if added_packages.contains(&normalized) {
                     continue;
                 }
-                if allowed_packages.contains(&normalized) {
+                let should_include = match allowed_packages {
+                    Some(a) => a.contains(&normalized),
+                    None => true,
+                };
+                if should_include {
                     add_nodes_recursive(
                         g,
                         failures,

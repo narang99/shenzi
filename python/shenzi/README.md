@@ -88,6 +88,8 @@ RUST_LOG=INFO shenzi build ./shenzi.json
 This can take a moment, after it is done, your application would be packaged in a `dist` folder.  
 You can ship this `dist` folder to any target machine and it should work out of the box. The only required dependency is `bash`.  
 
+> Note: by default `shenzi` would try to validate if some warnings are actually errors. It needs to scan the whole file system to do that, it would print a log like this: `shenzi will now validate if any of your warnings are errors, this can take time (it will scan your whole file system). You can skip this by passing --skip-warning-checks`. If you feel its taking too long, you can skip it by passing `--skip-warning-checks`. You should however, at least have one successful build with all warnings validated.   
+
 
 Run `dist/bootstrap.sh` to run your application.  
 ```bash

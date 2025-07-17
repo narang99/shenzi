@@ -82,8 +82,11 @@ impl PyPackage {
         }
     }
 
-    pub fn should_include_in_dist(&self, allowed_packages_normalized: &HashSet<String>) -> bool {
-        allowed_packages_normalized.contains(&self.normalized_name)
+    pub fn should_include_in_dist(&self, allowed_packages_normalized: &Option<HashSet<String>>) -> bool {
+        match allowed_packages_normalized {
+            Some(a) => a.contains(&self.normalized_name),
+            None => true,
+        }
     }
 
     pub fn normalized_name(&self) -> &str {

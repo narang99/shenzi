@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display, path::PathBuf};
+use std::{collections::HashMap, fmt::Display, path::{Path, PathBuf}};
 
 use anyhow::{Context, Result, anyhow};
 use bimap::BiHashMap;
@@ -49,6 +49,11 @@ impl<T: Factory> FileGraph<T> {
 
     pub fn len(&self) -> usize {
         self.inner.node_count()
+    }
+
+
+    pub fn contains_path(&self, p: &Path) -> bool {
+        self.path_by_node.contains_key(p)
     }
 
     /// simply add a node to the graph, this is a plain operation

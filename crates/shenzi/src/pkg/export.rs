@@ -16,6 +16,7 @@ impl Export for Pkg {
             Pkg::SitePackagesPlain { _site_packages: _, alias: _, rel_path: _ }
             | Pkg::Executable
             | Pkg::PrefixPlain(_)
+            | Pkg::MainPyScript
             | Pkg::ExecPrefixPlain(_) => {
                 fs::copy(path, dest)?;
             },

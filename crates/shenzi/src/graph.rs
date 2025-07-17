@@ -2,10 +2,9 @@ use std::{collections::HashMap, fmt::Display, path::PathBuf};
 
 use anyhow::{Context, Result, anyhow};
 use bimap::BiHashMap;
-use log::info;
 use petgraph::{Direction::Incoming, Graph, algo::toposort, graph::NodeIndex, visit::EdgeRef};
 
-use crate::{factory::Factory, node::Node};
+use crate::{factory::Factory, node::Node, paths::normalize_path};
 
 #[derive(Debug)]
 pub struct FileGraph<T: Factory> {
@@ -101,13 +100,14 @@ impl<T: Factory> FileGraph<T> {
 
         let mut all_parent_idx = Vec::new();
         for p in deps {
+            let p = normalize_path(&p);
             if let Some(parent_idx) = self.idx_by_path.get_by_right(&p) {
                 all_parent_idx.push(*parent_idx);
                 continue;
             }
             let parent_node = self.factory.make(&p, known_libs, &search_paths)?;
             if let Some(parent_node) = parent_node {
-                info!("adding node recursively in graph, path={}", p.display());
+                // info!("adding node recursively in graph, path={}", p.display());
                 let parent_idx = self
                     .add_tree(parent_node, known_libs, false, &search_paths)
                     .context(anyhow!("file: {}", p.display()))?;
@@ -208,6 +208,16 @@ mod test {
                 .cloned()
                 .unwrap_or_else(Vec::new);
             Ok(Some(Node::mock(path.clone(), deps)?))
+        }
+
+        fn make_binary(
+            &self,
+            path: &PathBuf,
+            known_libs: &HashMap<String, PathBuf>,
+            extra_search_paths: &Vec<PathBuf>,
+        ) -> Result<Option<Node>> {
+            // TODO add actual binary creation support if neded
+            self.make(path, known_libs, extra_search_paths)
         }
 
         fn make_py_executable(&self, path: &PathBuf) -> Result<Node> {

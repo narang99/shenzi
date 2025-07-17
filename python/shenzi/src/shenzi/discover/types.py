@@ -1,6 +1,6 @@
 
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any, Literal, Optional
 
 LoadKind = Literal["extension", "dlopen"]
 
@@ -26,6 +26,13 @@ class Load:
 
 @dataclass(frozen=True)
 class Lib:
+    path: str
+    
+    def to_dict(self) -> dict[str, Any]:
+        return {"path": self.path}
+
+@dataclass(frozen=True)
+class Bin:
     path: str
     
     def to_dict(self) -> dict[str, Any]:
@@ -70,9 +77,11 @@ class Sys:
 class Python:
     sys: Sys
     main: str
+    allowed_packages: Optional[list[str]]
+    cwd: str
     
     def to_dict(self) -> dict[str, Any]:
-        return {"sys": self.sys.to_dict(), "main": self.main}
+        return {"sys": self.sys.to_dict(), "main": self.main, "allowed_packages": self.allowed_packages, "cwd": self.cwd}
 
 
 @dataclass(frozen=True)
@@ -86,9 +95,10 @@ class Skip:
 
 
 @dataclass(frozen=True)
-class shenziDiscovery:
+class ShenziDiscovery:
     loads: list[Load]
     libs: list[Lib]
+    bins: list[Bin]
     python: Python
     skip: Skip
     env: dict[str, str]
@@ -97,6 +107,7 @@ class shenziDiscovery:
         return {
             "loads": [load.to_dict() for load in self.loads],
             "libs": [lib.to_dict() for lib in self.libs],
+            "bins": [bin.to_dict() for bin in self.bins],
             "python": self.python.to_dict(),
             "skip": self.skip.to_dict(),
             "env": self.env,

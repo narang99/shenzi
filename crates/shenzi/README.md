@@ -1,19 +1,19 @@
 # TODO
-- make qureapp work
-- better error when install_name_tool fails (this fails when the library is itself statically linked), need to see if this failure should even happen?
-  - currently, im ignoring a lib if it does not contain any load commands (outside of system library load commands)
-  - in this case, mostly we cover all statically linked cases
-- path handling is slightly confusing between strings and pathbufs in some places, fix that too
-- /Users/hariomnarang/Desktop/work/blog/linker/shenzi/crates/shenzi_rs/dist/reals/r/_weight_vector.cpython-39-darwin.so
-  - no space to change load commands in this file
-  - thankfully this is not extremely common out there
-  - the only option is to replicate the load commands structure inside the dist folder relative to what the file wants
-- im now getting ALL the loaded libraries in dyld_image_count
-  - now the problem is symlinks, if dyld found something using symlink, its going to add only the real path
-  - for each search which succeeded in dlopen, we need to add that search term to our symlink marker, thats the easiest way to do this
-    - the problem is me not getting the real path from the stupid dyld search, i need to use heuristics to make it work
 - handle weak lc load commands (which don't fail if the library does not exist) for mac
-- parallelize moving to dist, basically parallelize toposort (its a linear implementation right now, petgraph does not give a work distributing implementation right now)
+- parallelization 
+  - parallelization while creating graph
+    - create separate graphs for chunks and merge them later
+    - this would be useful for say, creating python graphs in parallel in a separate graph
+    - creating graphs in chunks of 10, and keep updating the known-libs
+  - toposort which provides parallel work units like python graphlib's sorter would help with dist creation
+- [x] dist folder is huge 
+  - its putting .git folder in
+  - adding test dependencies
+- test multiprocessing environments
+  - how does atexit behave in pytest-xdist? is it called once?
+  - add multiprocessing guards for LOAD variable
+- [x] tox creates duplicate virtual environments, might need to handle this somehow
+  - we are also pushing .git folder inside the dist, need to fix that too
 
 
 # Algorithm

@@ -12,6 +12,13 @@ pub trait Factory {
         extra_search_paths: &Vec<PathBuf>,
     ) -> Result<Option<Node>>;
 
+    fn make_binary(
+        &self,
+        path: &PathBuf,
+        known_libs: &HashMap<String, PathBuf>,
+        extra_search_paths: &Vec<PathBuf>,
+    ) -> Result<Option<Node>>;
+
     fn make_with_symlinks(
         &self,
         path: &PathBuf,

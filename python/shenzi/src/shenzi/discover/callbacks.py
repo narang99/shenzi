@@ -5,11 +5,11 @@ from shenzi.discover.search import cffi_find_library, ctypes_cdll_find_library
 from shenzi.discover.types import LoadParams, LocalLoad
 
 
-def cffi_dlopen_callback(name: str, loads: dict[LocalLoad, LoadParams]) -> None:
+def cffi_dlopen_callback(name: str, loads) -> None:
     _std_load_callback(name, loads, _cffi_dlopen, "cffi.FFI.dlopen", True)
 
 
-def ctypes_cdll_callback(name: str, loads: dict[LocalLoad, LoadParams]) -> None:
+def ctypes_cdll_callback(name: str, loads) -> None:
     _std_load_callback(name, loads, _ctypes_cdll_dlopen, "ctypes.CDLL", True)
 
 

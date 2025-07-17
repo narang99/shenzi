@@ -1,20 +1,20 @@
 {
 	"folders": [
-    {
-      "name": "root",
-      "path": ".",
-    }
 		{
-      "name": "py_shenzi",
+			"name": "root",
+			"path": ".",
+		},
+		{
+			"name": "py_shenzi",
 			"path": "python/shenzi"
 		},
 		{
-      "name": "shenzi_rs",
+			"name": "shenzi_rs",
 			"path": "crates/shenzi"
 		},
-    {
-      "path": "docs",
-    }
+		{
+			"path": "docs",
+		}
 	],
 	"settings": {
 		"cSpell.words": [
@@ -28,6 +28,7 @@
 			"dylib",
 			"dylibs",
 			"dynload",
+			"flate",
 			"ftypes",
 			"hariomnarang",
 			"ldconfig",
@@ -37,6 +38,7 @@
 			"libpango",
 			"libtest",
 			"objdump",
+			"patchelf",
 			"pathdiff",
 			"petgraph",
 			"platlibdir",
@@ -45,9 +47,9 @@
 			"rpaths",
 			"runpath",
 			"runpaths",
+			"shenzi",
 			"soname",
-			"toposort",
-			"shenzi"
+			"toposort"
 		]
 	}
 }

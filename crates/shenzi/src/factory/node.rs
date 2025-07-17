@@ -6,10 +6,16 @@ use log::info;
 pub use crate::factory::core::Factory;
 
 use crate::{
-    digest::make_digest, factory::{
+    digest::make_digest,
+    factory::{
         deps::create_deps,
         pkg::{get_exec_prefix_pkg, get_prefix_pkg, get_site_packages_pkg},
-    }, manifest::{Skip, Version}, node::{deps::Deps, Node, Pkg}, paths::normalize_path, pkg::paths::is_maybe_shared_library, site_pkgs::SitePkgs
+    },
+    manifest::{Skip, Version},
+    node::{Node, Pkg, deps::Deps},
+    paths::is_maybe_object_file,
+    paths::normalize_path,
+    site_pkgs::SitePkgs,
 };
 
 #[derive(Debug, Clone)]
@@ -48,6 +54,7 @@ impl NodeFactory {
         path: &PathBuf,
         known_libs: &HashMap<String, PathBuf>,
         extra_search_paths: &Vec<PathBuf>,
+        force_object_file_parsing: bool,
     ) -> Result<Deps> {
         create_deps(
             path,
@@ -56,6 +63,7 @@ impl NodeFactory {
             &self.env,
             known_libs,
             extra_search_paths,
+            force_object_file_parsing,
         )
     }
 
@@ -94,7 +102,7 @@ impl Factory for NodeFactory {
         known_libs: &HashMap<String, PathBuf>,
         extra_search_paths: &Vec<PathBuf>,
     ) -> Result<Option<Node>> {
-        let deps = self.create_deps(&path, known_libs, extra_search_paths)?;
+        let deps = self.create_deps(&path, known_libs, extra_search_paths, true)?;
         let is_shared_library = deps.is_shared_library();
         if !is_shared_library {
             bail!(
@@ -116,6 +124,28 @@ impl Factory for NodeFactory {
         )?))
     }
 
+    fn make_binary(
+        &self,
+        path: &PathBuf,
+        known_libs: &HashMap<String, PathBuf>,
+        extra_search_paths: &Vec<PathBuf>,
+    ) -> Result<Option<Node>> {
+        let deps = self.create_deps(&path, known_libs, extra_search_paths, true)?;
+        let is_shared_library = deps.is_shared_library();
+        let pkg = if is_shared_library {
+            if self.should_skip(path, is_shared_library) {
+                info!("skip: {}", path.display());
+                return Ok(None);
+            }
+            Pkg::BinaryInPath {
+                sha: make_digest(path)?,
+            }
+        } else {
+            Pkg::PlainPyBinaryFile
+        };
+        Ok(Some(Node::new(path.clone(), pkg, deps)?))
+    }
+
     fn make(
         &self,
         path: &PathBuf,
@@ -123,7 +153,7 @@ impl Factory for NodeFactory {
         extra_search_paths: &Vec<PathBuf>,
     ) -> Result<Option<Node>> {
         let p = normalize_path(path);
-        if self.should_skip(&p, is_maybe_shared_library(&p)) {
+        if self.should_skip(&p, is_maybe_object_file(&p)) {
             info!("skip: {}", p.display());
             return Ok(None);
         }
@@ -134,12 +164,17 @@ impl Factory for NodeFactory {
             );
         }
 
-        let deps = self.create_deps(&p, known_libs, extra_search_paths)?;
+        let deps = self.create_deps(&p, known_libs, extra_search_paths, false)?;
         let is_shared_library = deps.is_shared_library();
         if p.starts_with(&self.site_pkgs.lib_dynload) {
             return Ok(Some(Node::new(
                 p.clone(),
-                get_exec_prefix_pkg(&p, &self.site_pkgs.lib_dynload, &self.version, is_shared_library)?,
+                get_exec_prefix_pkg(
+                    &p,
+                    &self.site_pkgs.lib_dynload,
+                    &self.version,
+                    is_shared_library,
+                )?,
                 deps,
             )?));
         }
@@ -181,7 +216,7 @@ impl Factory for NodeFactory {
         Node::new(
             path.clone(),
             Pkg::Executable,
-            self.create_deps(path, &HashMap::new(), &Vec::new())?,
+            self.create_deps(path, &HashMap::new(), &Vec::new(), true)?,
         )
     }
 }

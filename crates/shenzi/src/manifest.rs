@@ -14,6 +14,7 @@ pub type Env = HashMap<String, String>;
 pub struct ShenziManifest {
     pub loads: Vec<Load>,
     pub libs: Vec<Lib>,
+    pub bins: Vec<Bin>,
     pub python: Python,
     pub env: Env,
     pub skip: Skip,
@@ -62,11 +63,25 @@ pub struct Lib {
     pub path: PathBuf,
 }
 
+
+/// binaries that are needed to be distributed
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Bin {
+    pub path: String,
+}
+
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Python {
     pub sys: Sys,
     // path to the main script
     pub main: PathBuf,
+    // packages in site-packages which are allowed to be added to the packaged application
+    // if None, everything is moved
+    pub allowed_packages: Option<Vec<String>>,
+
+    // the current directory of the process
+    pub cwd: PathBuf,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -128,7 +143,10 @@ mod test {
             },
             "path": ["/Users/hariomnarang/miniconda3/lib/python3.12/site-packages"],
             "executable": "/Users/hariomnarang/miniconda3/bin/python"
-        }
+        },
+        "main": "<path>/to/main.py",
+        "allowed_packages": None,
+        "cwd": "/path/to/cwd",
     },
     "env": {
         "PATH": "..."

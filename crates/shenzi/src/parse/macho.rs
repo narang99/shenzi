@@ -13,7 +13,7 @@ use lief::macho::{
 };
 use log::{debug, warn};
 
-use crate::{parse::error::ErrDidNotFindDependency, paths::{is_sys_lib, normalize_path, split_colon_separated_into_valid_search_paths}};
+use crate::{parse::error::ErrDidNotFindDependency, paths::{is_sys_lib_mac, normalize_path, split_colon_separated_into_valid_search_paths}};
 
 use crate::parse::core::{BinaryParseError, Macho};
 
@@ -177,7 +177,7 @@ fn get_load_commands(
                 LoadCommandTypes::IdDylib => id_dylib = Some(dylib.name()),
                 LoadCommandTypes::LoadDylib => {
                     let val = dylib.name();
-                    if is_sys_lib(&val) {
+                    if is_sys_lib_mac(&val) {
                         debug!(
                             "skipping system library {} in macho parsing, dependency of {}",
                             val, macho_path.display()

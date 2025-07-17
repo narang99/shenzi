@@ -21,6 +21,38 @@ First install `shenzi` in your virtual environment.
 pip install shenzi
 ```
 
+## Initializing the workspace
+If you have a project run using `poetry`, run
+```bash
+# only poetry package manager is supported
+shenzi init
+```
+It will ask you some questions and generate `shenzi_workspace.toml` file. The TOML file looks like this.  
+
+```toml
+# shenzi_workspace.toml
+# all relative paths are relative to the directory containing this file
+
+# you can add a list of binaries that your application calls
+# something like calling aws cli. Shenzi would try to find all these in your path and add them to the distribution
+binaries = ["tesseract"]
+
+[packaging]
+kind = "poetry"
+config_file = "<relative-path-to-poetry.lock>"
+# you can add the dependency groups you want in the distribution (dev, or other custom groups)
+groups = ["main"]
+
+[execution]
+main = "<relative-path-to-main-python-script>"
+```
+
+
+## Intercepting
+
+You need to first configure `shenzi` to listen to all the imports that your python application makes. You can either do this by running your application in your development environment and testing it. Or running tests.  
+
+### Running an application
 In you main script, add the following lines
 ```python
 import os
@@ -30,12 +62,26 @@ if os.environ.get("SHENZI_INIT_DISCOVERY", "False") == "True":
     shenzi_init_discovery()
 ```
 
-Run your application as you normally do. `shenzi` will start intercepting all shared libraries that your code is importing.  
+### In pytest
+If you are running tests in pytest, you can add this function in your root `conftest.py`
+```python
+# root conftest.py
+
+
+# this function is run by pytest in the beginning
+def pytest_configure():
+    from shenzi.discover import shenzi_init_discovery
+    shenzi_init_discovery()
+```
+
+Run your application as you normally do/or run tests. `shenzi` will start intercepting all shared libraries that your code is importing.  
 You should run as much of your application code as possible, like running all the tests. This allows `shenzi` to detect every dependency linked to your application at runtime.  
 
 Once you stop the application, a file `shenzi.json` (called the manifest) will be dumped in the current directory. This file contains all the shared library loads that `shenzi` detected. It also contains some information about your virtual environment.  
 Now run the `shenzi` CLI with this manifest file
 
+## Building the application
+From the directory containing `shenzi_workspace.toml` (your project's root directory), run this command:
 ```bash
 RUST_LOG=INFO shenzi build ./shenzi.json
 ```
@@ -50,6 +96,9 @@ Run `dist/bootstrap.sh` to run your application.
 bash dist/bootstrap.sh
 ```
 
+Note that if you don't specify `main` file in your `shenzi_workspace.toml`, `shenzi` would try to dynamically query that file, this can be annoying if you are running tests, so setting the file in workspace config is useful.  
+
+## Next steps
 You should at least read the doc which describes the structure of `shenzi.json` [here](/docs/manifest.md).  
 
 If you use this, feel free to raise an issue on any problem, I need feedback for this :)

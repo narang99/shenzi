@@ -50,6 +50,8 @@ pub enum Pkg {
         // the sha of the binary
         sha: String,
     },
+    // a python file which is in path as a binary
+    PlainPyBinaryFile,
 
     ExecPrefixPlain(PrefixPlain),
     ExecPrefixBinary(PrefixBinary),
@@ -59,6 +61,7 @@ pub enum Pkg {
     Executable,
     Binary {sha: String},
     BinaryInLDPath { symlinks: Vec<String>, sha: String },
+    BinaryInPath {sha: String},
 }
 
 

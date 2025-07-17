@@ -18,6 +18,6 @@ rm -rf dist || true
 mkdir src/shenzi/bin || true
 touch src/shenzi/bin/__init__.py
 cp ../../crates/shenzi/target/release/shenzi ./src/shenzi/bin/
-WHEEL_PLATFORM=manylinux_2_31_x86_64 uv build
+WHEEL_PLATFORM=${AUDITWHEEL_PLAT:-manylinux_2_31_x86_64} uv build
 
 uvx auditwheel repair ./dist/*.whl

@@ -3,13 +3,16 @@ use std::{
     process::{Command, Stdio},
 };
 
-use anyhow::{Result, anyhow, bail};
+use anyhow::{Context, Result, anyhow, bail};
 use pathdiff::diff_paths;
 
-use crate::{parse::Elf, paths::get_lib_name};
+use crate::{external::patchelf_path, parse::Elf, paths::file_name_as_str};
 
-
-pub fn patch_elf_for_destination(dest_path: &PathBuf, real_path: &PathBuf, symlink_farm_path: &PathBuf) -> Result<()> {
+pub fn patch_elf_for_destination(
+    dest_path: &PathBuf,
+    real_path: &PathBuf,
+    symlink_farm_path: &PathBuf,
+) -> Result<()> {
     let rpath = get_new_rpath(dest_path, symlink_farm_path)?;
     add_rpath(&rpath, real_path)?;
     Ok(())
@@ -22,14 +25,28 @@ pub fn patch_elf(elf: &Elf, reals_path: &PathBuf, symlink_farm_path: &PathBuf) -
     // for now doing the mac structure
     // why this matters is that the rpath can be bigger than what is there originally in the binary
     // this might result in us not being able to patch it
-    rm_rpath(reals_path)?;
+    if elf.dt_needed.len() == 0 {
+        // has no dependency, no need to patch
+        return Ok(());
+    }
+    if elf.all_dt_rpaths.len() + elf.all_dt_runpaths.len() > 0 {
+        // only remove rpath if there is any
+        rm_rpath(reals_path).with_context(|| {
+            anyhow!(
+                "failed in removing RPATH for {}, all_dt_rpaths={:?} all_dt_runpaths={:?}",
+                reals_path.display(),
+                elf.all_dt_rpaths,
+                elf.all_dt_runpaths
+            )
+        })?;
+    }
     add_rpath(&get_new_rpath(reals_path, symlink_farm_path)?, reals_path)?;
     modify_all_dt_needed(reals_path, symlink_farm_path, elf)?;
     Ok(())
 }
 
 fn rm_rpath(path: &PathBuf) -> Result<()> {
-    let output = Command::new("patchelf")
+    let output = Command::new(patchelf()?)
         .stderr(Stdio::null())
         .arg("--remove-rpath")
         .arg(path)
@@ -49,7 +66,7 @@ fn rm_rpath(path: &PathBuf) -> Result<()> {
 }
 
 fn add_rpath(rpath: &str, path: &PathBuf) -> Result<()> {
-    let status = Command::new("patchelf")
+    let status = Command::new(patchelf()?)
         .stderr(Stdio::null())
         .arg("--add-rpath")
         .arg(rpath)
@@ -91,9 +108,13 @@ fn get_new_rpath(real_path: &PathBuf, symlink_farm: &PathBuf) -> Result<String> 
     Ok(format!("$ORIGIN/{}/", rel_path))
 }
 
-fn modify_all_dt_needed(reals_path: &PathBuf, symlink_farm_path: &PathBuf, elf: &Elf) -> Result<()> {
+fn modify_all_dt_needed(
+    reals_path: &PathBuf,
+    symlink_farm_path: &PathBuf,
+    elf: &Elf,
+) -> Result<()> {
     for (old, parent_path) in &elf.dt_needed {
-        let lib_name = get_lib_name(&parent_path)?;
+        let lib_name = file_name_as_str(&parent_path)?;
         let lib_in_farm = symlink_farm_path.join(&lib_name);
         if !lib_in_farm.exists() {
             bail!(
@@ -108,10 +129,8 @@ fn modify_all_dt_needed(reals_path: &PathBuf, symlink_farm_path: &PathBuf, elf: 
     Ok(())
 }
 
-
-
 fn modify_dt_needed(old: &str, new: &str, path: &PathBuf) -> Result<()> {
-    let status = Command::new("patchelf")
+    let status = Command::new(patchelf()?)
         .stderr(Stdio::null())
         .arg("--replace-needed")
         .arg(old)
@@ -132,23 +151,7 @@ fn modify_dt_needed(old: &str, new: &str, path: &PathBuf) -> Result<()> {
     }
 }
 
-
-// fn set_so_name(name: &str, path: &PathBuf) -> Result<()> {
-//     let status = Command::new("patchelf")
-//         .stderr(Stdio::null())
-//         .arg("--set-soname")
-//         .arg(name)
-//         .arg(path)
-//         .status()?;
-
-//     if status.success() {
-//         Ok(())
-//     } else {
-//         bail!(
-//             "failed in running patchelf to set SONAME path={} name={} status={:?}",
-//             path.display(),
-//             name,
-//             status
-//         )
-//     }
-// }
+fn patchelf() -> Result<String> {
+    let p = patchelf_path()?;
+    p.to_str().map(|p| p.to_string()).ok_or(anyhow!("failed in converting patchelf path to string"))
+}

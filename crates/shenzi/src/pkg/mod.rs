@@ -1,6 +1,6 @@
 // main function which moves stuff to dist
 
-use std::{fs, path::PathBuf};
+use std::{collections::{HashMap, HashSet}, fs, path::PathBuf};
 
 use anyhow::{Context, Result, anyhow};
 use log::info;
@@ -91,6 +91,7 @@ pub fn mk_symlink_farms(
     info!("Step: make symlink farms");
     let total = nodes.len();
     let mut i = 0;
+    let mut done_reals = HashSet::new();
     for node in nodes {
         let deps = g.get_node_dependencies(node);
         let symlink_farm = mk_symlink_farm(node, &deps, dist).with_context(|| {
@@ -101,6 +102,13 @@ pub fn mk_symlink_farms(
             )
         })?;
         let real_path = node.pkg.reals(&node, dist);
+        if let Some(ref real_path) = real_path {
+            if done_reals.contains(real_path) {
+                // skip repeated node. this can happen if two libraries have the same sha but exist separately on the file system (true copies)
+                continue;
+            }
+            done_reals.insert(real_path.clone());
+        }
         symlink_farm
             .as_ref()
             .map(|p| -> Result<()> {
@@ -135,6 +143,7 @@ pub fn cp_to_destinations(nodes: &Vec<&Node>, dist: &PathBuf) -> Result<()> {
     info!("Step: copy/move/symlink to destination (site-packages)");
     let total = nodes.len();
     let mut i = 0;
+    let mut done_reals = HashSet::new();
     for node in nodes {
         let real_path = node.pkg.reals(&node, dist);
         let symlink_farm = node.pkg.symlink_farm(&node.path, dist);
@@ -162,9 +171,14 @@ pub fn cp_to_destinations(nodes: &Vec<&Node>, dist: &PathBuf) -> Result<()> {
         ) {
             // hack: this is very bad
             // need better code for this
+            if done_reals.contains(real_path) {
+                // skip repeated node. this can happen if two libraries have the same sha but exist separately on the file system (true copies)
+                continue;
+            }
             node.deps.patch_for_destination(dest_path, real_path, symlink_farm_path).with_context(|| {
                 anyhow!("failure in patching destination for destination={} real_path={} symlink_farm={}", dest_path.display(), real_path.display(), symlink_farm_path.display())
             })?;
+            done_reals.insert(real_path.clone());
         }
         i += 1;
         if total / 10 != 0 && i % (total / 10) == 0 {

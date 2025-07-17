@@ -7,7 +7,7 @@ use std::{
 use anyhow::{Context, Result, anyhow};
 use bimap::BiHashMap;
 use log::info;
-use petgraph::{Direction::Incoming, Graph, algo::toposort, graph::NodeIndex, visit::EdgeRef};
+use petgraph::{algo::toposort, graph::NodeIndex, visit::EdgeRef, Direction::{Incoming, Outgoing}, Graph};
 
 use crate::{factory::Factory, node::Node, paths::normalize_path};
 
@@ -168,6 +168,10 @@ impl<T: Factory> FileGraph<T> {
         self.path_by_node.get(path)
     }
 
+    pub fn get_idx_by_node(&self, node: &Node) -> Option<&NodeIndex> {
+        self.idx_by_path.get_by_right(&node.path)
+    }
+
     pub fn toposort(&self) -> Result<impl Iterator<Item = Node>> {
         let node_indices = toposort(&self.inner, None)
             .map_err(|e| anyhow!("{:#?}", e))
@@ -197,6 +201,34 @@ impl<T: Factory> FileGraph<T> {
                     .collect::<Vec<Node>>()
             })
             .unwrap_or(vec![])
+    }
+
+    pub fn _replace_node_in_graph(
+        &mut self,
+        idx: NodeIndex,
+        replace_with: NodeIndex,
+    ) -> anyhow::Result<()> {
+        // useful for trimming a graph, not used right now
+        let others: Vec<_> = self
+            .inner
+            .edges_directed(idx, Incoming)
+            .map(|e| e.source())
+            .collect();
+        for n in others {
+            self.inner.add_edge(n, replace_with, ());
+        }
+
+        let others: Vec<_> = self
+            .inner
+            .edges_directed(idx, Outgoing)
+            .map(|e| e.target())
+            .collect();
+        for n in others {
+            self.inner.add_edge(replace_with, n, ());
+        }
+        self.remove_node(idx);
+
+        Ok(())
     }
 
     fn get_node_by_index_or_panic(&self, idx: NodeIndex) -> Node {

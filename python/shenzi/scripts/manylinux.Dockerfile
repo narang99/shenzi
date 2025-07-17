@@ -8,3 +8,5 @@ COPY python/shenzi /python/shenzi
 COPY crates /crates
 
 ENV WHEEL_PLATFORM=manylinux_2_31_x86_64
+
+ENTRYPOINT bash

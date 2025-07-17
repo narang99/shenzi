@@ -61,7 +61,6 @@ fn modify_load_cmds(reals_path: &PathBuf, symlink_farm_path: &PathBuf, mach: &Ma
             );
         }
         modify_load_command(&load_cmd, &dylib_id(&lib_name), reals_path)?;
-        sign_dylib(reals_path)?;
     }
     Ok(())
 }
@@ -95,103 +94,119 @@ fn get_new_rpath(real_path: &PathBuf, symlink_farm: &PathBuf) -> Result<String> 
 }
 
 fn rm_rpath(rpath: &str, path: &PathBuf) -> Result<()> {
-    let status = Command::new("install_name_tool")
-        .stderr(Stdio::null())
+    let output = Command::new("install_name_tool")
         .arg("-delete_rpath")
         .arg(rpath)
         .arg(path)
-        .status()?;
+        .output()?;
 
-    if status.success() {
+    if output.status.success() {
         Ok(())
     } else {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
         bail!(
-            "failed in running install_name_tool to delete rpath path={} rpath={} status={:?}",
+            "failed in running install_name_tool to delete rpath path={} rpath={} status={:?}\n\tstdout={}\n\tstderr={}",
             rpath,
             path.display(),
-            status
+            output.status,
+            stdout,
+            stderr,
         )
     }
 }
 
 fn add_rpath(rpath: &str, path: &PathBuf) -> Result<()> {
-    let status = Command::new("install_name_tool")
-        .stderr(Stdio::null())
+    let output = Command::new("install_name_tool")
         .arg("-add_rpath")
         .arg(rpath)
         .arg(path)
-        .status()?;
+        .output()?;
 
-    if status.success() {
+    if output.status.success() {
         Ok(())
     } else {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
         bail!(
-            "failed in running install_name_tool to add rpath path={} rpath={} status={:?}",
+            "failed in running install_name_tool to add rpath path={} rpath={} status={:?}\n\tstdout={}\n\tstderr={}",
             path.display(),
             rpath,
-            status
+            output.status,
+            stdout,
+            stderr,
         )
     }
 }
 
 fn modify_load_command(old: &str, new: &str, path: &PathBuf) -> Result<()> {
-    let status = Command::new("install_name_tool")
-        .stderr(Stdio::null())
+    let output = Command::new("install_name_tool")
         .arg("-change")
         .arg(old)
         .arg(new)
         .arg(path)
-        .status()?;
+        .output()?;
 
-    if status.success() {
+    if output.status.success() {
         Ok(())
     } else {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
         bail!(
-            "failed in running install_name_tool to modifying load command path={} old={} new={} status={:?}",
+            "failed in running install_name_tool to modifying load command path={} old={} new={} status={:?}\n\tstdout={}\n\tstderr={}",
             old,
             new,
             path.display(),
-            status
+            output.status,
+            stdout,
+            stderr,
         )
     }
 }
 
 fn set_dylib_id(id: String, path: &PathBuf) -> Result<()> {
-    let status = Command::new("install_name_tool")
-        .stderr(Stdio::null())
+    let output = Command::new("install_name_tool")
         .arg("-id")
         .arg(&id)
         .arg(path)
-        .status()?;
+        .output()?;
 
-    if status.success() {
+    if output.status.success() {
         Ok(())
     } else {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
         bail!(
-            "failed in running install_name_tool to set dylib_id path={} id={} status={:?}",
+            "failed in running install_name_tool to set dylib_id path={} id={} status={:?}\n\tstdout={}\n\tstderr={}",
             id,
             path.display(),
-            status
+            output.status,
+            stdout,
+            stderr,
         )
     }
 }
 
 fn sign_dylib(path: &PathBuf) -> Result<()> {
-    let status = Command::new("codesign")
+    let output = Command::new("codesign")
         .stderr(Stdio::null())
         .arg("-s")
         .arg("-")
         .arg("-f")
         .arg(&path)
-        .status()?;
+        .output()?;
 
-    if status.success() {
+    if output.status.success() {
         Ok(())
     } else {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
         bail!(
-            "failed in running signing dylib_id path={} status={:?}",
+            "failed in running signing dylib_id path={} status={:?}\n\tstdout={}\n\tstderr={}",
             path.display(),
-            status
+            output.status,
+            stdout,
+            stderr,
         )
     }
 }

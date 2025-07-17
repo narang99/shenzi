@@ -4,6 +4,7 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
+use log::info;
 
 use crate::pkg::patch::elf::{patch_elf, patch_elf_for_destination};
 use crate::{node::deps::Deps, parse::Binary, pkg::patch::macho::patch_macho};

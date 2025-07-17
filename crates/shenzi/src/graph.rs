@@ -1,8 +1,13 @@
-use std::{collections::HashMap, fmt::Display, path::{Path, PathBuf}};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Display,
+    path::{Path, PathBuf},
+};
 
 use anyhow::{Context, Result, anyhow};
 use bimap::BiHashMap;
-use petgraph::{Direction::Incoming, Graph, algo::toposort, graph::NodeIndex, visit::EdgeRef};
+use log::info;
+use petgraph::{algo::toposort, graph::NodeIndex, visit::EdgeRef, Direction::{Incoming, Outgoing}, Graph};
 
 use crate::{factory::Factory, node::Node, paths::normalize_path};
 
@@ -51,9 +56,17 @@ impl<T: Factory> FileGraph<T> {
         self.inner.node_count()
     }
 
-
     pub fn contains_path(&self, p: &Path) -> bool {
         self.path_by_node.contains_key(p)
+    }
+
+    pub fn remove_node(&mut self, idx: NodeIndex) {
+        self.inner.remove_node(idx);
+        match self.idx_by_path.get_by_left(&idx) {
+            Some(path) => self.path_by_node.remove(path),
+            None => None,
+        };
+        self.idx_by_path.remove_by_left(&idx);
     }
 
     /// simply add a node to the graph, this is a plain operation
@@ -103,24 +116,20 @@ impl<T: Factory> FileGraph<T> {
         let mut search_paths = search_paths.clone();
         search_paths.extend(extra_search_paths);
 
-        let mut all_parent_idx = Vec::new();
-        for p in deps {
-            let p = normalize_path(&p);
-            if let Some(parent_idx) = self.idx_by_path.get_by_right(&p) {
-                all_parent_idx.push(*parent_idx);
-                continue;
-            }
-            let parent_node = self.factory.make(&p, known_libs, &search_paths)?;
-            if let Some(parent_node) = parent_node {
-                // info!("adding node recursively in graph, path={}", p.display());
-                let parent_idx = self
-                    .add_tree(parent_node, known_libs, false, &search_paths)
-                    .context(anyhow!("file: {}", p.display()))?;
-                all_parent_idx.push(parent_idx);
-            }
-        }
-
+        // first insert the node, prevent infinite recursion in case of circular dependency
+        let our_path = node.path.clone();
         let idx = self.add_node(node, replace);
+
+        let all_parent_idx = match self.add_parents(&deps, known_libs, &search_paths) {
+            Ok(all_parent_idx) => all_parent_idx,
+            Err(e) => {
+                // on error, remove ourselves
+                // next time, someone might succeed when they add to tree
+                self.remove_node(idx);
+                return Err(e).context(anyhow!("node: {}", our_path.display()));
+            }
+        };
+
         for parent_idx in all_parent_idx {
             self.inner.add_edge(parent_idx, idx, ());
             if !self.inner.contains_edge(parent_idx, idx) {
@@ -130,9 +139,37 @@ impl<T: Factory> FileGraph<T> {
         Ok(idx)
     }
 
+    fn add_parents(
+        &mut self,
+        deps: &Vec<PathBuf>,
+        known_libs: &HashMap<String, PathBuf>,
+        search_paths: &Vec<PathBuf>,
+    ) -> Result<Vec<NodeIndex>> {
+        let mut all_parent_idx = Vec::new();
+        for p in deps {
+            let p = normalize_path(&p);
+            if let Some(parent_idx) = self.idx_by_path.get_by_right(&p) {
+                all_parent_idx.push(*parent_idx);
+                continue;
+            }
+            let parent_node = self.factory.make(&p, known_libs, &search_paths)?;
+            if let Some(parent_node) = parent_node {
+                info!("add node recursive, path={}", p.display());
+                let parent_idx = self
+                    .add_tree(parent_node, known_libs, false, &search_paths)
+                    .context(anyhow!("file: {}", p.display()))?;
+                all_parent_idx.push(parent_idx);
+            }
+        }
+        Ok(all_parent_idx)
+    }
 
     pub fn get_node_by_path(&self, path: &PathBuf) -> Option<&Node> {
         self.path_by_node.get(path)
+    }
+
+    pub fn get_idx_by_node(&self, node: &Node) -> Option<&NodeIndex> {
+        self.idx_by_path.get_by_right(&node.path)
     }
 
     pub fn toposort(&self) -> Result<impl Iterator<Item = Node>> {
@@ -164,6 +201,34 @@ impl<T: Factory> FileGraph<T> {
                     .collect::<Vec<Node>>()
             })
             .unwrap_or(vec![])
+    }
+
+    pub fn _replace_node_in_graph(
+        &mut self,
+        idx: NodeIndex,
+        replace_with: NodeIndex,
+    ) -> anyhow::Result<()> {
+        // useful for trimming a graph, not used right now
+        let others: Vec<_> = self
+            .inner
+            .edges_directed(idx, Incoming)
+            .map(|e| e.source())
+            .collect();
+        for n in others {
+            self.inner.add_edge(n, replace_with, ());
+        }
+
+        let others: Vec<_> = self
+            .inner
+            .edges_directed(idx, Outgoing)
+            .map(|e| e.target())
+            .collect();
+        for n in others {
+            self.inner.add_edge(replace_with, n, ());
+        }
+        self.remove_node(idx);
+
+        Ok(())
     }
 
     fn get_node_by_index_or_panic(&self, idx: NodeIndex) -> Node {
@@ -305,7 +370,6 @@ mod test {
         println!("*************start complex test**********************");
         let tmp = create_temp_dir();
 
-
         let dep2_path = touch_path(&tmp, "dep2.py");
         let dep2 = Node::mock(dep2_path.clone(), vec![]).unwrap();
 
@@ -316,7 +380,11 @@ mod test {
         let dep3 = Node::mock(dep3_path.clone(), vec![dep2_path.clone()]).unwrap();
 
         let main_path = touch_path(&tmp, "python");
-        let main = Node::mock(main_path.clone(), vec![dep1_path.clone(), dep3_path.clone()]).unwrap();
+        let main = Node::mock(
+            main_path.clone(),
+            vec![dep1_path.clone(), dep3_path.clone()],
+        )
+        .unwrap();
 
         let path_by_deps = HashMap::from([
             (main_path, vec![dep1_path.clone(), dep3_path.clone()]),

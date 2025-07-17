@@ -66,20 +66,24 @@ fn rm_rpath(path: &PathBuf) -> Result<()> {
 }
 
 fn add_rpath(rpath: &str, path: &PathBuf) -> Result<()> {
-    let status = Command::new(patchelf()?)
+    let output = Command::new(patchelf()?)
         .stderr(Stdio::null())
         .arg("--add-rpath")
         .arg(rpath)
         .arg(path)
-        .status()?;
-    if status.success() {
+        .output()?;
+    if output.status.success() {
         Ok(())
     } else {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
         bail!(
-            "failed in running patchelf to set rpath path={} rpath={} status={:?}",
+            "failed in running patchelf to set rpath path={} rpath={} status={:?}\n\tstdout={}\n\tstderr={}",
             path.display(),
             rpath,
-            status
+            output.status,
+            stdout,
+            stderr,
         )
     }
 }
@@ -130,23 +134,27 @@ fn modify_all_dt_needed(
 }
 
 fn modify_dt_needed(old: &str, new: &str, path: &PathBuf) -> Result<()> {
-    let status = Command::new(patchelf()?)
+    let output = Command::new(patchelf()?)
         .stderr(Stdio::null())
         .arg("--replace-needed")
         .arg(old)
         .arg(new)
         .arg(path)
-        .status()?;
+        .output()?;
 
-    if status.success() {
+    if output.status.success() {
         Ok(())
     } else {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
         bail!(
-            "failed in running patchelf to modifying DT_NEEDED path={} old={} new={} status={:?}",
+            "failed in running patchelf to modifying DT_NEEDED path={} old={} new={} status={:?}\n\tstdout={}\n\tstderr={}",
             old,
             new,
             path.display(),
-            status
+            output.status,
+            stdout,
+            stderr,
         )
     }
 }

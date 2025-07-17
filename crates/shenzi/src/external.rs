@@ -72,7 +72,6 @@ fn from_tarball(tarball: &Path, file_to_extract: &Path, dest: &Path) -> Result<(
     for entry in archive.entries().context("failed to read tar entries")? {
         let mut entry = entry.context("failed to read tar entry")?;
         let path = entry.path()?;
-        println!("entryyyy {}", path.display());
         if path == file_to_extract {
             let mut out = File::create(dest).context("failed to create patchelf in cache")?;
             std::io::copy(&mut entry, &mut out).context("failed to extract patchelf binary")?;

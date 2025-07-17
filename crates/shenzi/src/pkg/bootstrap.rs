@@ -12,13 +12,21 @@ use crate::{
     pkg::paths::{lib_dynload_relative_path, site_pkgs_relative_path, stdlib_relative_path},
 };
 
-const MAC_BOOTSTRAP_SCRIPT: &str = r#"
-#!/bin/bash
-set -euo pipefail
-
+const SCRIPT_DIR_SH: &str = r#"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "bootstrap directory: $SCRIPT_DIR"
+"#;
 
+const RUN_PY_INTERPRETER_SH: &str = r#"
+exec "$SCRIPT_DIR/python/bin/python" "$@"
+"#;
+
+const RUN_MAIN_SH: &str = r#"
+cd $SCRIPT_DIR/{{MAIN_SCRIPT_DIR}}
+exec "$SCRIPT_DIR/python/bin/python" {{MAIN_SCRIPT_NAME}} "$@"
+"#;
+
+const MAC_ENV_EXPORT_SH: &str = r#"
 ORIGINAL_DYLD_LIBRARY_PATH="${DYLD_LIBRARY_PATH:-}"
 export DYLD_LIBRARY_PATH="$SCRIPT_DIR/lib/l:$ORIGINAL_DYLD_LIBRARY_PATH"
 echo "DYLD_LIBRARY_PATH: $DYLD_LIBRARY_PATH"
@@ -31,27 +39,31 @@ for path in "${SITE_PKG_REL_PATHS[@]}"; do
 done
 
 echo "PYTHONPATH=$PYTHONPATH"
-
-
-cd $SCRIPT_DIR/{{MAIN_SCRIPT_DIR}}
-exec "$SCRIPT_DIR/python/bin/python" {{MAIN_SCRIPT_NAME}} "$@"
 "#;
 
-// possible fix for linux being weird
-// $ORIGIN is set to the actual path in linux (the symlink), not the realpath
-// this is breaking dependency resolution for us
-// export LD_ORIGIN_PATH="$SCRIPT_DIR/reals/r"
-// the above might hardcode ORIGIN to our thing, might be useful
-// as everything really is just relative to the reals directory
-// we mostly don't need additional rpath patching too maybe?
-
-const LINUX_BOOTSTRAP_SCRIPT: &str = r#"
+const PY_SH_TEMPLATE: &str = r#"
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-echo "bootstrap directory: $SCRIPT_DIR"
+{{SCRIPT_DIR_SH}}
 
+{{ENV_EXPORT_SH}}
+
+{{RUN_PY_INTERPRETER_SH}}
+"#;
+
+const BOOTSTRAP_SCRIPT_TEMPLATE: &str = r#"
+#!/bin/bash
+set -euo pipefail
+
+{{SCRIPT_DIR_SH}}
+
+{{ENV_EXPORT_SH}}
+
+{{RUN_MAIN_SH}}
+"#;
+
+const LINUX_ENV_EXPORT_SH: &str = r#"
 ORIGINAL_LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
 export LD_LIBRARY_PATH="$SCRIPT_DIR/lib/l:$ORIGINAL_LD_LIBRARY_PATH"
 echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
@@ -64,9 +76,15 @@ for path in "${SITE_PKG_REL_PATHS[@]}"; do
 done
 
 echo "PYTHONPATH=$PYTHONPATH"
+"#;
 
-cd $SCRIPT_DIR/{{MAIN_SCRIPT_DIR}}
-exec "$SCRIPT_DIR/python/bin/python" {{MAIN_SCRIPT_NAME}} "$@"
+const PY_SCRIPT_IN_BIN_SH: &str = r#"
+#!/bin/bash
+set -euo pipefail
+
+{{SCRIPT_DIR_SH}}
+
+exec "$SCRIPT_DIR/../../py.sh" $SCRIPT_DIR/{{REL_PY_SCRIPT_PATH}}
 "#;
 
 pub fn write_bootstrap_script(
@@ -93,8 +111,8 @@ pub fn write_bootstrap_script(
             .replace("{{MAIN_SCRIPT_NAME}}", &main_filename)
     };
     let script = match os {
-        "macos" => gen_bootstrap(&MAC_BOOTSTRAP_SCRIPT),
-        "linux" => gen_bootstrap(&LINUX_BOOTSTRAP_SCRIPT),
+        "macos" => gen_bootstrap(&get_basic_bootstrap_template(BootstrapOS::Mac)),
+        "linux" => gen_bootstrap(&get_basic_bootstrap_template(BootstrapOS::Linux)),
 
         _ => {
             bail!("unsupported OS: {}", os);
@@ -104,6 +122,35 @@ pub fn write_bootstrap_script(
     fs::write(script_path, script)?;
     info!("bootstrap script written");
     Ok(())
+}
+
+enum BootstrapOS {
+    Linux,
+    Mac,
+}
+
+fn get_basic_bootstrap_template(os: BootstrapOS) -> String {
+    let base_template = BOOTSTRAP_SCRIPT_TEMPLATE
+        .replace("{{SCRIPT_DIR_SH}}", SCRIPT_DIR_SH)
+        .replace("{{RUN_MAIN_SH}}", RUN_MAIN_SH);
+    match os {
+        BootstrapOS::Mac => base_template.replace("{{ENV_EXPORT_SH}}", MAC_ENV_EXPORT_SH),
+        BootstrapOS::Linux => base_template.replace("{{ENV_EXPORT_SH}}", LINUX_ENV_EXPORT_SH),
+    }
+}
+
+fn get_basic_py_sh_template(os: BootstrapOS) -> String {
+    let base_template = PY_SH_TEMPLATE
+        .replace("{{SCRIPT_DIR_SH}}", SCRIPT_DIR_SH)
+        .replace("{{RUN_PY_INTERPRETER_SH}}", RUN_PY_INTERPRETER_SH);
+    match os {
+        BootstrapOS::Mac => base_template.replace("{{ENV_EXPORT_SH}}", MAC_ENV_EXPORT_SH),
+        BootstrapOS::Linux => base_template.replace("{{ENV_EXPORT_SH}}", LINUX_ENV_EXPORT_SH),
+    }
+}
+
+fn get_py_script_in_bin_template() -> String {
+    PY_SCRIPT_IN_BIN_SH.replace("{{SCRIPT_DIR_SH}}", SCRIPT_DIR_SH)
 }
 
 fn get_main_script_paths(main_destination: &PathBuf, dist: &PathBuf) -> Result<(String, String)> {

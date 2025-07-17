@@ -32,6 +32,7 @@ done
 
 echo "PYTHONPATH=$PYTHONPATH"
 
+export PATH="$SCRIPT_DIR/bin/b:$PATH"
 
 cd $SCRIPT_DIR/{{MAIN_SCRIPT_DIR}}
 exec "$SCRIPT_DIR/python/bin/python" {{MAIN_SCRIPT_NAME}} "$@"
@@ -64,6 +65,8 @@ for path in "${SITE_PKG_REL_PATHS[@]}"; do
 done
 
 echo "PYTHONPATH=$PYTHONPATH"
+
+export PATH="$SCRIPT_DIR/bin/b:$PATH"
 
 cd $SCRIPT_DIR/{{MAIN_SCRIPT_DIR}}
 exec "$SCRIPT_DIR/python/bin/python" {{MAIN_SCRIPT_NAME}} "$@"

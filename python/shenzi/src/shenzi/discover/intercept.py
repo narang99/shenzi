@@ -14,35 +14,29 @@ DUMP_LOC_ENV_VAR = "SHENZI_JSON"
 DEFAULT_LOC = "shenzi.json"
 
 
-from multiprocessing import Manager
-
-_manager = Manager()
-LOADS = _manager.dict()  # type: ignore
-
-
-def monkey_patch_dlopen():
+def monkey_patch_dlopen(loads):
     try_monkey_patch(
         "ctypes",
         ["cdll", "LoadLibrary"],
-        partial(ctypes_cdll_callback, loads=LOADS),
+        partial(ctypes_cdll_callback, loads=loads),
         kwarg_else_arg("name", 0),
     )
     try_monkey_patch(
         "ctypes",
         ["CDLL", "__init__"],
-        partial(ctypes_cdll_callback, loads=LOADS),
+        partial(ctypes_cdll_callback, loads=loads),
         kwarg_else_arg("name", 1),
     )
     try_monkey_patch(
         "cffi",
         ["api", "FFI", "dlopen"],
-        partial(cffi_dlopen_callback, loads=LOADS),
+        partial(cffi_dlopen_callback, loads=loads),
         kwarg_else_arg("name", 1),
     )
     try_monkey_patch(
         "cffi",
         ["FFI", "dlopen"],
-        partial(cffi_dlopen_callback, loads=LOADS),
+        partial(cffi_dlopen_callback, loads=loads),
         kwarg_else_arg("name", 1),
     )
 
@@ -55,7 +49,7 @@ def _validate_prepared_loads(loads: dict[LocalLoad, LoadParams]):
             )
 
 
-def main_exit_handler(pkgs_to_skip: list[str]):
+def main_exit_handler(pkgs_to_skip: list[str], loads):
     import sys
     from pathlib import Path
 
@@ -64,13 +58,10 @@ def main_exit_handler(pkgs_to_skip: list[str]):
     prefixes_to_skip = [p for p in prefixes_to_skip if p.exists()]
     prefixes_to_skip = [str(p) for p in prefixes_to_skip]
 
-    exit_handler(prefixes_to_skip)
+    exit_handler(prefixes_to_skip, loads)
 
 
-def exit_handler(prefixes_to_skip: list[str]):
-    from copy import deepcopy
-
-    loads = LOADS
+def exit_handler(prefixes_to_skip: list[str], loads):
     _validate_prepared_loads(loads)
 
     dump_loc = os.environ.get(DUMP_LOC_ENV_VAR, DEFAULT_LOC)
@@ -93,12 +84,16 @@ _ENABLED_DISCOVERY = False
 
 
 def shenzi_init_discovery(skip: Optional[list[str]] = None):
+    from multiprocessing import Manager
+    _manager = Manager()
+    LOADS = _manager.dict()  # type: ignore
+
     if not skip:
         skip = []
     global _ENABLED_DISCOVERY
     if _ENABLED_DISCOVERY:
         return
     _ENABLED_DISCOVERY = True
-    monkey_patch_dlopen()
+    monkey_patch_dlopen(LOADS)
     register_import_watcher(partial(add_import_callback, loads=LOADS))
-    atexit.register(lambda: main_exit_handler(skip))
+    atexit.register(lambda: main_exit_handler(skip, LOADS))

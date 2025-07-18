@@ -1,3 +1,7 @@
+# Testing requirements
+- linux: an application where we fail in resolving rpaths multiple times (but it works out in the end in retries)
+- mac
+
 # TODO
 - handle weak lc load commands (which don't fail if the library does not exist) for mac
 - parallelization 

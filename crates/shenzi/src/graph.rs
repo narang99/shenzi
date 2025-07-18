@@ -7,13 +7,13 @@ use std::{
 use anyhow::{Context, Result, anyhow};
 use bimap::BiHashMap;
 use log::info;
-use petgraph::{algo::toposort, graph::NodeIndex, visit::EdgeRef, Direction::{Incoming, Outgoing}, Graph};
+use petgraph::{algo::toposort, graph::NodeIndex, prelude::StableGraph, visit::EdgeRef, Direction::{Incoming, Outgoing}, Graph};
 
 use crate::{factory::Factory, node::Node, paths::normalize_path};
 
 #[derive(Debug)]
 pub struct FileGraph<T: Factory> {
-    inner: Graph<(), ()>,
+    inner: StableGraph<(), ()>,
     idx_by_path: BiHashMap<NodeIndex, PathBuf>,
     path_by_node: HashMap<PathBuf, Node>,
     factory: T,
@@ -45,7 +45,7 @@ impl<T: Factory> Display for FileGraph<T> {
 impl<T: Factory> FileGraph<T> {
     pub fn new(factory: T) -> Self {
         Self {
-            inner: Graph::new(),
+            inner: StableGraph::new(),
             idx_by_path: BiHashMap::new(),
             path_by_node: HashMap::new(),
             factory,
